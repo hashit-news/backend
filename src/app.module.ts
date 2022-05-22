@@ -19,9 +19,7 @@ import loggingConfig from './config/logging.config';
         pinoHttp: {
           level: configService.get<string>('logging.defaultLevel', 'debug'),
           transport:
-            configService.get<string>('express.environment') !== 'production'
-              ? { target: 'pino-pretty' }
-              : undefined,
+            configService.get<string>('express.environment') !== 'production' ? { target: 'pino-pretty' } : undefined,
         },
       }),
     }),
