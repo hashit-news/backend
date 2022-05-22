@@ -10,6 +10,8 @@
     "build": "nest build",
     "clean": "concurrently \"rimraf dist\" \"rimraf node_modules\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "prettier:check": "prettier --check ./**/*.{ts,js,json,yml}",
+    "prettier:write": "prettier --write ./**/*.{ts,js,json,yml}",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",

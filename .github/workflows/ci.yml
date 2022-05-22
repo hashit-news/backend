@@ -1,20 +1,41 @@
-name: CI Pipeline
+name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
+
 jobs:
-  lint-build-test:
+  build:
     runs-on: ubuntu-latest
-    env:
-      CI: true
-      build_env: production
+    strategy:
+      matrix:
+        node: ['>=17.0.0']
+
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      - name: Cache node modules
+        uses: actions/cache@v3
         with:
-          node-version: '17'
-      - run: yarn
-      - run: yarn lint
-      - run: yarn build
-      - run: yarn test
+          path: ~/.yarn
+          key: ${{ runner.os }}-node-${{ matrix.node }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ matrix.node }}
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies
+        run: yarn
+      - name: Lint
+        run: yarn lint
+      - name: Prettier
+        run: npm run prettier:check
+      - name: Build
+        run: yarn build
+      - name: Test
+        run: yarn test
