@@ -13,7 +13,7 @@
     "eslint:fix": "yarn eslint:check -- --fix",
     "lint": "yarn eslint:check && yarn prettier:check",
     "build": "nest build",
-    "clean": "concurrently \"rimraf dist\" \"rimraf node_modules\"",
+    "clean": "concurrently \"rimraf dist\" \"rimraf node_modules\" \"rimraf coverage\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "prettier:check": "prettier --check ./**/*.{ts,js,json,yml}",
     "prettier:write": "prettier --write ./**/*.{ts,js,json,yml}",

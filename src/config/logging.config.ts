@@ -8,5 +8,5 @@ export default registerAs(
   'logging',
   (): LoggingConfig => ({
     defaultLevel: process.env.APP_LOGLEVEL || 'debug',
-  }),
+  })
 );
