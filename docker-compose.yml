@@ -1,0 +1,24 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:14.1-alpine
+    container_name: postgres
+    ports:
+      - ${DATABASE_PORT}:${DATABASE_PORT}
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-q', '-d', '${DATABASE_USER}', '-U', '${DATABASE_PASS}']
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    restart: always
+    environment:
+      - POSTGRES_DB=${DATABASE_NAME}
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASS}
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    volumes:
+      - ./.docker/db:/docker-entrypoint-initdb.d/
