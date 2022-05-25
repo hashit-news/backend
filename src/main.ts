@@ -2,8 +2,8 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
-import { ExpressConfig } from './configs/express.config';
-import { PrismaService } from './common/services/prisma.service';
+import { ExpressConfig } from './common/config/express.config';
+import { PrismaService } from './common/database/prisma.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
