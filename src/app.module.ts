@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
 import expressConfig from './common/config/express.config';
 import loggingConfig from './common/config/logging.config';
 
@@ -23,6 +25,8 @@ import loggingConfig from './common/config/logging.config';
         },
       }),
     }),
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
