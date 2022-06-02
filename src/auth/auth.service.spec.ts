@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { UsersService } from '../users/users.service';
+import { ConfigService } from '@nestjs/config';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -19,6 +20,12 @@ describe('AuthService', () => {
         },
         {
           provide: JwtService,
+          useValue: {
+            sign: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
           useValue: {
             sign: jest.fn(),
           },

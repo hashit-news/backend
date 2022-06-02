@@ -14,4 +14,13 @@ export class UsersService {
   async getUserById(id: string): Promise<User | undefined> {
     return await this.prisma.user.findUnique({ where: { id } });
   }
+
+  /**
+   * Gets a user by their username
+   * @param username Username of the user
+   * @returns User
+   */
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return await this.prisma.user.findUnique({ where: { username } });
+  }
 }

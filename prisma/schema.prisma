@@ -11,24 +11,13 @@ datasource db {
 }
 
 model User {
-  id                      String                  @id @default(cuid()) @db.VarChar(32)
-  roles                   UserRole[]
-  createdAt               DateTime                @default(now()) @db.Timestamp
-  updatedAt               DateTime                @default(now()) @db.Timestamp
-  UserEmailPasswordLogins UserEmailPasswordLogin?
+  id        String     @id @default(cuid()) @db.VarChar(32)
+  username  String?    @unique @db.VarChar(50)
+  roles     UserRole[]
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime   @default(now()) @map("updated_at") @db.Timestamp
 
   @@map("users")
-}
-
-model UserEmailPasswordLogin {
-  id        String   @id @db.VarChar(32)
-  user      User     @relation(fields: [id], references: [id])
-  email     String   @unique @db.VarChar(50)
-  password  String
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamp
-
-  @@map("user_email_password_logins")
 }
 
 enum RoleEnum {
@@ -39,9 +28,9 @@ enum RoleEnum {
 }
 
 model UserRole {
-  User   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
   userId String @map("user_id") @db.VarChar(32)
-  Role   Role   @relation(fields: [roleId], references: [id])
+  role   Role   @relation(fields: [roleId], references: [id])
   roleId Int    @map("role_id")
 
   @@id([userId, roleId])

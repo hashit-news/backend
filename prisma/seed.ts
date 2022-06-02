@@ -17,16 +17,11 @@ async function main() {
   });
 
   await prisma.user.upsert({
-    where: { id: process.env.SEED_USER_ID },
-    update: {},
+    where: { id: process.env.SEED_ADMIN_USER_ID },
+    update: { username: process.env.SEED_ADMIN_USERNAME },
     create: {
-      id: process.env.SEED_USER_ID,
-      UserEmailPasswordLogins: {
-        create: {
-          email: process.env.SEED_USER_EMAIL,
-          password: process.env.SEED_USER_PASSWORD,
-        },
-      },
+      id: process.env.SEED_ADMIN_USER_ID,
+      username: process.env.SEED_ADMIN_USERNAME,
       roles: {
         create: [
           {
