@@ -12,9 +12,11 @@ datasource db {
 
 model User {
   id        String     @id @default(cuid()) @db.VarChar(32)
-  username  String?    @unique @db.VarChar(50)
+  username  String     @unique @db.VarChar(50)
   roles     UserRole[]
+  createdBy String?    @map("created_by") @db.VarChar(32)
   createdAt DateTime   @default(now()) @map("created_at") @db.Timestamp
+  updatedBy String?    @map("updated_by") @db.VarChar(32)
   updatedAt DateTime   @default(now()) @map("updated_at") @db.Timestamp
 
   @@map("users")
