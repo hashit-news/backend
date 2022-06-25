@@ -12,6 +12,17 @@ export class AuthService {
     private readonly configService: ConfigService
   ) {}
 
+  async generateLogin(publicAddress: string) {
+    let walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
+
+    if (!walletLogin) {
+      walletLogin = await this.usersService.createWeb3Login(publicAddress);
+    }
+    const unsignedMessage = `Welcome to Hash It News! ${walletLogin.nonce}`;
+
+    return { publicAddress: walletLogin.publicAddress, unsignedMessage };
+  }
+
   async validateLocalAdminUser(username: string, password: string): Promise<UserDto | null> {
     const user = await this.usersService.getUserByUsername(username);
     const localPassword = this.configService.get('SEED_ADMIN_PASSWORD');

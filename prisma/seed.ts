@@ -22,6 +22,8 @@ async function main() {
     create: {
       id: process.env.SEED_ADMIN_USER_ID,
       username: process.env.SEED_ADMIN_USERNAME,
+      loginAttempts: 0,
+      isLockedOut: false,
       roles: {
         create: [
           {

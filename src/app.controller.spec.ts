@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getLoggerToken } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthService } from './auth/auth.service';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -13,6 +14,10 @@ describe('AppController', () => {
         AppService,
         {
           provide: getLoggerToken(AppService.name),
+          useValue: null,
+        },
+        {
+          provide: AuthService,
           useValue: null,
         },
       ],

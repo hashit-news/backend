@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
+import { Web3Service } from '../web3/web3.service';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -35,6 +36,10 @@ describe('AuthService', () => {
           useValue: {
             user: { findUnique: jest.fn() },
           },
+        },
+        {
+          provide: Web3Service,
+          useValue: {},
         },
       ],
     }).compile();

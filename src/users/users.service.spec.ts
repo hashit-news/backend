@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Web3Service } from '../web3/web3.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { UsersService } from './users.service';
+import { getLoggerToken } from 'nestjs-pino';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -14,6 +16,14 @@ describe('UsersService', () => {
           useValue: {
             user: { findUnique: jest.fn() },
           },
+        },
+        {
+          provide: Web3Service,
+          useValue: {},
+        },
+        {
+          provide: getLoggerToken(UsersService.name),
+          useValue: null,
         },
       ],
     }).compile();
