@@ -1,14 +1,16 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { User, UserWalletLogin } from '@prisma/client';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { Web3Service } from '../web3/web3.service';
 import { PrismaService } from '../common/database/prisma.service';
+import { CryptoService } from '../common/security/crypto.service';
+import { Web3Service } from '../common/web3/web3.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly web3Service: Web3Service,
+    private readonly cryptoService: CryptoService,
     @InjectPinoLogger(UsersService.name) private readonly logger: PinoLogger
   ) {}
 
@@ -39,7 +41,7 @@ export class UsersService {
         userWalletLogin: {
           create: {
             publicAddress: address,
-            nonce: this.generateNonce(),
+            nonce: this.cryptoService.generateNonce(),
           },
         },
       },
@@ -65,9 +67,5 @@ export class UsersService {
    */
   async getUserByUsername(username: string): Promise<User | undefined> {
     return await this.prisma.user.findUnique({ where: { username } });
-  }
-
-  generateNonce(): string {
-    return 'test';
   }
 }

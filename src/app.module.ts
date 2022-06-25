@@ -5,7 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { Web3Module } from './web3/web3.module';
+import { CommonModule } from './common/common.module';
 import expressConfig from './common/config/express.config';
 import loggingConfig from './common/config/logging.config';
 
@@ -26,9 +26,9 @@ import loggingConfig from './common/config/logging.config';
         },
       }),
     }),
+    CommonModule,
     AuthModule,
     UsersModule,
-    Web3Module,
   ],
   controllers: [AppController],
   providers: [AppService],
