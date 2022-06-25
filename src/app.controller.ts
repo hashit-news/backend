@@ -13,7 +13,7 @@ export class AppController {
   }
 
   @Get('auth/login')
-  async getLogin(@Query() publicAddress: string) {
+  async getLogin(@Query('publicAddress') publicAddress: string) {
     return this.authService.generateLogin(publicAddress);
   }
 
