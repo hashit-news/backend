@@ -6,7 +6,7 @@ import { CryptoService } from '../common/security/crypto.service';
 import { Web3Service } from '../common/web3/web3.service';
 import { BadRequestException } from '@nestjs/common';
 
-describe('UsersService', () => {
+describe(UsersService.name, () => {
   let service: UsersService;
 
   beforeEach(async () => {

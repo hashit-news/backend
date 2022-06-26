@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Web3Service } from './web3.service';
 
-describe('Web3Service', () => {
+describe(Web3Service.name, () => {
   let service: Web3Service;
 
   beforeEach(async () => {
@@ -67,7 +67,7 @@ describe('Web3Service', () => {
 
     // act
     const result = service.getAddress(address);
-    console.log(result);
+
     // assert
     expect(result).toBeDefined();
     expect(result).not.toBeNull();

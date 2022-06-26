@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
 
-describe('AppController', () => {
+describe(AppController.name, () => {
   let appController: AppController;
 
   beforeEach(async () => {
