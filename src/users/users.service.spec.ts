@@ -58,7 +58,7 @@ describe(UsersService.name, () => {
         {
           provide: CryptoService,
           useValue: {
-            generateNonce: jest.fn(() => '123'),
+            generate256BitSecret: jest.fn(() => '123'),
           },
         },
         {

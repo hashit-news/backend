@@ -3,7 +3,7 @@ import { randomBytes } from 'crypto';
 
 @Injectable()
 export class CryptoService {
-  generateNonce() {
+  generate256BitSecret() {
     return randomBytes(16).toString('hex');
   }
 }

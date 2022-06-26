@@ -41,7 +41,7 @@ export class UsersService {
         userWalletLogin: {
           create: {
             publicAddress: address,
-            nonce: this.cryptoService.generateNonce(),
+            nonce: this.cryptoService.generate256BitSecret(),
           },
         },
       },
