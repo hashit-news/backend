@@ -1,4 +1,6 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { ethers } from 'ethers';
 import { Web3Service } from './web3.service';
 
 describe(Web3Service.name, () => {
@@ -90,5 +92,50 @@ describe(Web3Service.name, () => {
     expect(result.address).toBeUndefined();
     expect(result.error).toBeDefined();
     expect(result.error.message).toContain('bad icap checksum');
+  });
+
+  it('should validate signed message', async () => {
+    // arrange
+    const wallet = ethers.Wallet.createRandom();
+    const signature = 'I like turtles.';
+    const signedMessage = await wallet.signMessage(signature);
+    const publicAddress = wallet.address;
+
+    // act
+    const result = service.validateSignature(signature, publicAddress, signedMessage);
+
+    // assert
+    expect(result).toBeDefined();
+    expect(result).not.toBeNull();
+    expect(result.error).toBeUndefined();
+    expect(result.isValid).toBeTruthy();
+  });
+
+  it('should fail to validate signed message because of invalid signature', () => {
+    // arrange
+    const wallet = ethers.Wallet.createRandom();
+    const signature = 'I like turtles.';
+    const signedMessage = 'mumbo_jumble';
+    const publicAddress = wallet.address;
+
+    // act
+    const result = service.validateSignature(signature, publicAddress, signedMessage);
+
+    // assert
+    expect(result).toBeDefined();
+    expect(result).not.toBeNull();
+    expect(result.error).not.toBeUndefined();
+    expect(result.error.message).toContain('signature missing');
+    expect(result.isValid).toBeFalsy();
+  });
+
+  it('should fail to validate signed message because of invalid public address', () => {
+    // arrange
+    const signature = 'I like turtles.';
+    const signedMessage = 'mumbo_jumble';
+    const publicAddress = 'INVALID_ADDRESS';
+
+    // actsert
+    expect(() => service.validateSignature(signature, publicAddress, signedMessage)).toThrowError(BadRequestException);
   });
 });

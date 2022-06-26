@@ -3,3 +3,8 @@ export interface GetAddressResult {
   address?: string;
   error?: Error;
 }
+
+export interface GetResult {
+  isValid: boolean;
+  error?: Error;
+}
