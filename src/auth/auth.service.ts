@@ -27,8 +27,6 @@ export class AuthService {
     const user = await this.usersService.getUserByUsername(username);
     const localPassword = this.configService.get('SEED_ADMIN_PASSWORD');
 
-    console.log('validate', user, localPassword);
-
     if (user && password === localPassword) {
       return { ...user };
     }
