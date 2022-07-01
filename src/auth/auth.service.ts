@@ -1,10 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Web3Service } from '../common/web3/web3.service';
 import { UserDto } from '../users/user.models';
 import { UsersService } from '../users/users.service';
+import { Web3LoginInfoDto } from './auth.models';
 
 @Injectable()
 export class AuthService {
@@ -18,7 +19,7 @@ export class AuthService {
     private readonly logger: PinoLogger
   ) {}
 
-  async getOrCreateWalletLogin(publicAddress: string) {
+  async getWeb3LoginInfo(publicAddress: string): Promise<Web3LoginInfoDto> {
     let walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
 
     if (!walletLogin) {
@@ -26,22 +27,21 @@ export class AuthService {
     }
 
     // TODO - add friendly message to nonce
-    const unsignedMessage = walletLogin.nonce;
+    const signature = walletLogin.nonce;
 
-    return { publicAddress: walletLogin.publicAddress, unsignedMessage };
+    return { publicAddress: walletLogin.publicAddress, signature };
   }
 
-  async validateUserSignature(publicAddress: string, signature: string): Promise<UserDto | null> {
+  async validateWeb3Signature(publicAddress: string, signedMessage: string): Promise<UserDto | null> {
     const walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
 
     if (!walletLogin) {
-      throw new HttpException('Invalid public address', HttpStatus.NOT_FOUND);
+      throw new NotFoundException('Invalid public address');
     }
 
     // TODO - add friendly message to nonce
-    const unsignedMessage = walletLogin.nonce;
-    const result = this.web3Service.validateSignature(walletLogin.publicAddress, signature, unsignedMessage);
-
+    const signature = walletLogin.nonce;
+    const result = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
     if (!result.isValid) {
       this.logger?.debug(
         { walletLogin, error: result.error },

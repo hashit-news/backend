@@ -6,18 +6,56 @@ import { UsersService } from '../users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { Web3Service } from '../common/web3/web3.service';
 import { getLoggerToken } from 'nestjs-pino';
+import { ethers } from 'ethers';
+
+const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
+const EXISTING_SIGNED_MESSAGE = 'This is valid';
+const EXISTING_NONCE = 'nonce';
+const NEW_NONCE = 'nonce1';
+const EXISTING_USER_ID = '123';
+const EXISTING_USER_NAME = 'fujiwara_takumi_86';
 
 describe('AuthService', () => {
   let service: AuthService;
-
+  let newWallet: ethers.Wallet;
   beforeEach(async () => {
+    newWallet = ethers.Wallet.createRandom();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         {
           provide: UsersService,
           useValue: {
-            getUserById: jest.fn(),
+            getWalletLoginByPublicAddress: jest.fn(val => {
+              if (val === EXISTING_PUBLIC_ADDRESS) {
+                return {
+                  userId: EXISTING_USER_ID,
+                  publicAddress: EXISTING_PUBLIC_ADDRESS,
+                  nonce: EXISTING_NONCE,
+                };
+              }
+
+              return null;
+            }),
+            createWeb3Login: jest.fn(val => {
+              return {
+                publicAddress: val,
+                userId: EXISTING_USER_ID,
+                nonce: NEW_NONCE,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
+            }),
+            getUserById: jest.fn(val => {
+              if (val === EXISTING_USER_ID) {
+                return {
+                  id: EXISTING_USER_ID,
+                  username: EXISTING_USER_NAME,
+                };
+              }
+
+              return null;
+            }),
           },
         },
         {
@@ -26,7 +64,22 @@ describe('AuthService', () => {
             sign: jest.fn(),
           },
         },
-        Web3Service,
+        {
+          provide: Web3Service,
+          useValue: {
+            validateSignature: jest.fn((publicAddress, signature, signedMessage) => {
+              if (
+                publicAddress === EXISTING_PUBLIC_ADDRESS &&
+                signature === EXISTING_NONCE &&
+                signedMessage == EXISTING_SIGNED_MESSAGE
+              ) {
+                return { isValid: true };
+              }
+
+              return { isValid: false, error: 'Invalid signature' };
+            }),
+          },
+        },
         {
           provide: getLoggerToken(AuthService.name),
           useValue: null,
@@ -38,14 +91,48 @@ describe('AuthService', () => {
             user: { findUnique: jest.fn() },
           },
         },
-        Web3Service,
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
   });
 
-  it('should get existing wallet login', () => {
-    expect(service).toBeDefined();
+  it('should get existing web3 login info', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+
+    // act
+    const loginInfo = await service.getWeb3LoginInfo(publicAddress);
+
+    // assert
+    expect(loginInfo.publicAddress).toBe(publicAddress);
+    expect(loginInfo.signature).toBe(EXISTING_NONCE);
+  });
+
+  it('should get create new wallet login and get web3 login info', async () => {
+    // arrange
+    const publicAddress = newWallet.address;
+
+    // act
+    const loginInfo = await service.getWeb3LoginInfo(publicAddress);
+
+    // assert
+    expect(loginInfo.publicAddress).toBe(publicAddress);
+    expect(loginInfo.signature).toBe(NEW_NONCE);
+  });
+
+  it.only('should validate web3 signature', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = EXISTING_SIGNED_MESSAGE;
+
+    // act
+    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+
+    // assert
+    expect(user).toBeDefined();
+    expect(user).not.toBeNull();
+    expect(user?.id).toBe(EXISTING_USER_ID);
+    expect(user?.username).toBe(EXISTING_USER_NAME);
   });
 });

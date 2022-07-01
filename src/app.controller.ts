@@ -13,6 +13,6 @@ export class AppController {
 
   @Get('auth/login')
   async getLogin(@Query('publicAddress') publicAddress: string) {
-    return this.authService.getOrCreateWalletLogin(publicAddress);
+    return this.authService.getWeb3LoginInfo(publicAddress);
   }
 }
