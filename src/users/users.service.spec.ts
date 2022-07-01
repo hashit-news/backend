@@ -29,6 +29,8 @@ describe(UsersService.name, () => {
                     nonce: 'nonce',
                   };
                 }
+
+                return null;
               }),
             },
             user: {
@@ -41,6 +43,8 @@ describe(UsersService.name, () => {
                     },
                   };
                 }
+
+                return null;
               }),
               findUnique: jest.fn(val => {
                 if (val && val.where) {
@@ -50,6 +54,8 @@ describe(UsersService.name, () => {
                     return { username: 'fujiwara_takumi' };
                   }
                 }
+
+                return null;
               }),
             },
           },
@@ -81,7 +87,7 @@ describe(UsersService.name, () => {
     // assert
     expect(user).toBeDefined();
     expect(user).not.toBeNull();
-    expect(user.id).toBe(userId);
+    expect(user?.id).toBe(userId);
   });
 
   it('should not get user by id', async () => {
@@ -92,7 +98,7 @@ describe(UsersService.name, () => {
     const user = await service.getUserById(userId);
 
     // assert
-    expect(user).toBeUndefined();
+    expect(user).toBeNull();
   });
 
   it('should get username', async () => {
@@ -105,7 +111,7 @@ describe(UsersService.name, () => {
     // assert
     expect(user).toBeDefined();
     expect(user).not.toBeNull();
-    expect(user.username).toBe(username);
+    expect(user?.username).toBe(username);
   });
 
   it('should not get username', async () => {
@@ -116,7 +122,7 @@ describe(UsersService.name, () => {
     const user = await service.getUserByUsername(username);
 
     // assert
-    expect(user).toBeUndefined();
+    expect(user).toBeNull();
   });
 
   it('should create web3 login', async () => {
@@ -151,8 +157,8 @@ describe(UsersService.name, () => {
     // assert
     expect(userWalletLogin).toBeDefined();
     expect(userWalletLogin).not.toBeNull();
-    expect(userWalletLogin.publicAddress).toBe(address);
-    expect(userWalletLogin.nonce).toBe('nonce');
+    expect(userWalletLogin?.publicAddress).toBe(address);
+    expect(userWalletLogin?.nonce).toBe('nonce');
   });
 
   it('should fail to find wallet login', async () => {
@@ -163,7 +169,7 @@ describe(UsersService.name, () => {
     const userWalletLogin = await service.getWalletLoginByPublicAddress(address);
 
     // assert
-    expect(userWalletLogin).toBeUndefined();
+    expect(userWalletLogin).toBeNull();
   });
 
   it('should fail to find wallet login by public address because address is invalid', async () => {

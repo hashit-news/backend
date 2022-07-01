@@ -8,11 +8,11 @@ export class Web3Service {
     try {
       return { isValid: true, address: ethers.utils.getAddress(address) };
     } catch (err) {
-      return { isValid: false, error: err };
+      return { isValid: false, error: (err as Error)?.message };
     }
   }
 
-  validateSignature(signature: string, publicAddress: string, signedMessage: string): GetResult {
+  validateSignature(publicAddress: string, signature: string, signedMessage: string): GetResult {
     const { isValid, address, error } = this.getAddress(publicAddress);
 
     if (!isValid) {
@@ -23,7 +23,7 @@ export class Web3Service {
       const recoveredAddress = ethers.utils.verifyMessage(signature, signedMessage);
       return { isValid: address === recoveredAddress };
     } catch (err) {
-      return { isValid: false, error: err };
+      return { isValid: false, error: (err as Error)?.message };
     }
   }
 }

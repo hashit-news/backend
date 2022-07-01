@@ -43,7 +43,7 @@ describe(Web3Service.name, () => {
     expect(result.isValid).toBeFalsy();
     expect(result.address).toBeUndefined();
     expect(result.error).toBeDefined();
-    expect(result.error.message).toContain('invalid address');
+    expect(result.error).toContain('invalid address');
   });
 
   it('should fail to get address because of invalid casing', () => {
@@ -59,7 +59,7 @@ describe(Web3Service.name, () => {
     expect(result.isValid).toBeFalsy();
     expect(result.address).toBeUndefined();
     expect(result.error).toBeDefined();
-    expect(result.error.message).toContain('bad address checksum');
+    expect(result.error).toContain('bad address checksum');
   });
 
   it('should get address from ICAP address', () => {
@@ -91,7 +91,7 @@ describe(Web3Service.name, () => {
     expect(result.isValid).toBeFalsy();
     expect(result.address).toBeUndefined();
     expect(result.error).toBeDefined();
-    expect(result.error.message).toContain('bad icap checksum');
+    expect(result.error).toContain('bad icap checksum');
   });
 
   it('should validate signed message', async () => {
@@ -102,7 +102,7 @@ describe(Web3Service.name, () => {
     const publicAddress = wallet.address;
 
     // act
-    const result = service.validateSignature(signature, publicAddress, signedMessage);
+    const result = service.validateSignature(publicAddress, signature, signedMessage);
 
     // assert
     expect(result).toBeDefined();
@@ -119,13 +119,13 @@ describe(Web3Service.name, () => {
     const publicAddress = wallet.address;
 
     // act
-    const result = service.validateSignature(signature, publicAddress, signedMessage);
+    const result = service.validateSignature(publicAddress, signature, signedMessage);
 
     // assert
     expect(result).toBeDefined();
     expect(result).not.toBeNull();
     expect(result.error).not.toBeUndefined();
-    expect(result.error.message).toContain('signature missing');
+    expect(result.error).toContain('signature missing');
     expect(result.isValid).toBeFalsy();
   });
 
@@ -136,6 +136,6 @@ describe(Web3Service.name, () => {
     const publicAddress = 'INVALID_ADDRESS';
 
     // actsert
-    expect(() => service.validateSignature(signature, publicAddress, signedMessage)).toThrowError(BadRequestException);
+    expect(() => service.validateSignature(publicAddress, signature, signedMessage)).toThrowError(BadRequestException);
   });
 });

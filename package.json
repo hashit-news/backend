@@ -15,6 +15,7 @@
     "eslint:fix": "yarn eslint:check --fix",
     "prettier:check": "prettier --check ./**/*.{ts,js,json,yml}",
     "prettier:fix": "prettier --write ./**/*.{ts,js,json,yml}",
+    "compile": "tsc",
     "build": "nest build",
     "clean": "concurrently \"rimraf dist\" \"rimraf node_modules\" \"rimraf coverage\"",
     "prepare": "husky install",

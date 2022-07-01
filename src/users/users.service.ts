@@ -1,6 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { User, UserWalletLogin } from '@prisma/client';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { PrismaService } from '../common/database/prisma.service';
 import { CryptoService } from '../common/security/crypto.service';
 import { Web3Service } from '../common/web3/web3.service';
@@ -10,11 +9,10 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly web3Service: Web3Service,
-    private readonly cryptoService: CryptoService,
-    @InjectPinoLogger(UsersService.name) private readonly logger: PinoLogger
+    private readonly cryptoService: CryptoService
   ) {}
 
-  async getWalletLoginByPublicAddress(publicAddress: string): Promise<UserWalletLogin | undefined> {
+  async getWalletLoginByPublicAddress(publicAddress: string): Promise<UserWalletLogin | null> {
     const { isValid, address } = this.web3Service.getAddress(publicAddress);
 
     if (!isValid) {
@@ -27,7 +25,7 @@ export class UsersService {
   async createWeb3Login(publicAddress: string): Promise<UserWalletLogin> {
     const { isValid, address } = this.web3Service.getAddress(publicAddress);
 
-    if (!isValid) {
+    if (!isValid || !address) {
       throw new BadRequestException('Invalid public address');
     }
 
@@ -48,6 +46,10 @@ export class UsersService {
       include: { userWalletLogin: true },
     });
 
+    if (!user.userWalletLogin) {
+      throw new InternalServerErrorException('Unable to create wallet login');
+    }
+
     return user.userWalletLogin;
   }
 
@@ -56,7 +58,7 @@ export class UsersService {
    * @param id Id of the user
    * @returns User
    */
-  async getUserById(id: string): Promise<User | undefined> {
+  async getUserById(id: string): Promise<User | null> {
     return await this.prisma.user.findUnique({ where: { id } });
   }
 
@@ -65,7 +67,7 @@ export class UsersService {
    * @param username Username of the user
    * @returns User
    */
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  async getUserByUsername(username: string): Promise<User | null> {
     return await this.prisma.user.findUnique({ where: { username } });
   }
 }

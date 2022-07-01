@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
-import { LocalAuthGuard } from './auth/local.guard';
 
 @Controller()
 export class AppController {
@@ -14,12 +13,6 @@ export class AppController {
 
   @Get('auth/login')
   async getLogin(@Query('publicAddress') publicAddress: string) {
-    return this.authService.generateLogin(publicAddress);
-  }
-
-  @UseGuards(LocalAuthGuard)
-  @Post('auth/login')
-  async login(@Request() req) {
-    return req.user;
+    return this.authService.getOrCreateWalletLogin(publicAddress);
   }
 }

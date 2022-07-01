@@ -9,6 +9,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
   const expressConfig = config.get<ExpressConfig>('express');
+
+  if (!expressConfig) {
+    throw new Error('Express config not found');
+  }
+
   const logger = app.get(Logger);
   const prismaService = app.get(PrismaService);
 

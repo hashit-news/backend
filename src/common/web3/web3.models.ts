@@ -1,10 +1,10 @@
 export interface GetAddressResult {
   isValid: boolean;
   address?: string;
-  error?: Error;
+  error?: string;
 }
 
 export interface GetResult {
   isValid: boolean;
-  error?: Error;
+  error?: string;
 }
