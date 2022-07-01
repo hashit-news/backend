@@ -7,7 +7,8 @@
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist",
-    "prepush": "lint-staged && yarn format:check && yarn test",
+    "precommit": "lint-staged",
+    "prepush": "yarn test",
     "format": "yarn eslint:fix && yarn prettier:fix",
     "format:check": "yarn eslint:check && yarn prettier:check",
     "eslint:check": "eslint \"{src,apps,libs,test}/**/*.ts\"",
