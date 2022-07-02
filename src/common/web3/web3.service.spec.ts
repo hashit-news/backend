@@ -26,7 +26,6 @@ describe(Web3Service.name, () => {
     expect(result).toBeDefined();
     expect(result).not.toBeNull();
     expect(result.isValid).toBeTruthy();
-    expect(result.error).toBeUndefined();
     expect(result.address).toBe(expectedAddress);
   });
 
@@ -42,8 +41,6 @@ describe(Web3Service.name, () => {
     expect(result).not.toBeNull();
     expect(result.isValid).toBeFalsy();
     expect(result.address).toBeUndefined();
-    expect(result.error).toBeDefined();
-    expect(result.error).toContain('invalid address');
   });
 
   it('should fail to get address because of invalid casing', () => {
@@ -58,8 +55,6 @@ describe(Web3Service.name, () => {
     expect(result).not.toBeNull();
     expect(result.isValid).toBeFalsy();
     expect(result.address).toBeUndefined();
-    expect(result.error).toBeDefined();
-    expect(result.error).toContain('bad address checksum');
   });
 
   it('should get address from ICAP address', () => {
@@ -74,7 +69,6 @@ describe(Web3Service.name, () => {
     expect(result).toBeDefined();
     expect(result).not.toBeNull();
     expect(result.isValid).toBeTruthy();
-    expect(result.error).toBeUndefined();
     expect(result.address).toBe(expectedAddress);
   });
 
@@ -90,8 +84,6 @@ describe(Web3Service.name, () => {
     expect(result).not.toBeNull();
     expect(result.isValid).toBeFalsy();
     expect(result.address).toBeUndefined();
-    expect(result.error).toBeDefined();
-    expect(result.error).toContain('bad icap checksum');
   });
 
   it('should validate signed message', async () => {
@@ -102,13 +94,10 @@ describe(Web3Service.name, () => {
     const publicAddress = wallet.address;
 
     // act
-    const result = service.validateSignature(publicAddress, signature, signedMessage);
+    const isValid = service.validateSignature(publicAddress, signature, signedMessage);
 
     // assert
-    expect(result).toBeDefined();
-    expect(result).not.toBeNull();
-    expect(result.error).toBeUndefined();
-    expect(result.isValid).toBeTruthy();
+    expect(isValid).toBeTruthy();
   });
 
   it('should fail to validate signed message because of invalid signature', () => {
@@ -119,14 +108,10 @@ describe(Web3Service.name, () => {
     const publicAddress = wallet.address;
 
     // act
-    const result = service.validateSignature(publicAddress, signature, signedMessage);
+    const isValid = service.validateSignature(publicAddress, signature, signedMessage);
 
     // assert
-    expect(result).toBeDefined();
-    expect(result).not.toBeNull();
-    expect(result.error).not.toBeUndefined();
-    expect(result.error).toContain('signature missing');
-    expect(result.isValid).toBeFalsy();
+    expect(isValid).toBeFalsy();
   });
 
   it('should fail to validate signed message because of invalid public address', () => {

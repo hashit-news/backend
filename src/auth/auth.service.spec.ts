@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { Web3Service } from '../common/web3/web3.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { ethers } from 'ethers';
+import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
@@ -14,6 +15,7 @@ const EXISTING_NONCE = 'nonce';
 const NEW_NONCE = 'nonce1';
 const EXISTING_USER_ID = '123';
 const EXISTING_USER_NAME = 'fujiwara_takumi_86';
+const EXISTING_FAKE_ADDRESS = 'fake';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -30,6 +32,12 @@ describe('AuthService', () => {
               if (val === EXISTING_PUBLIC_ADDRESS) {
                 return {
                   userId: EXISTING_USER_ID,
+                  publicAddress: EXISTING_PUBLIC_ADDRESS,
+                  nonce: EXISTING_NONCE,
+                };
+              } else if (val === EXISTING_FAKE_ADDRESS) {
+                return {
+                  userId: 'NOT EXISTS',
                   publicAddress: EXISTING_PUBLIC_ADDRESS,
                   nonce: EXISTING_NONCE,
                 };
@@ -73,10 +81,10 @@ describe('AuthService', () => {
                 signature === EXISTING_NONCE &&
                 signedMessage == EXISTING_SIGNED_MESSAGE
               ) {
-                return { isValid: true };
+                return true;
               }
 
-              return { isValid: false, error: 'Invalid signature' };
+              return false;
             }),
           },
         },
@@ -121,7 +129,7 @@ describe('AuthService', () => {
     expect(loginInfo.signature).toBe(NEW_NONCE);
   });
 
-  it.only('should validate web3 signature', async () => {
+  it('should validate web3 signature', async () => {
     // arrange
     const publicAddress = EXISTING_PUBLIC_ADDRESS;
     const signedMessage = EXISTING_SIGNED_MESSAGE;
@@ -134,5 +142,37 @@ describe('AuthService', () => {
     expect(user).not.toBeNull();
     expect(user?.id).toBe(EXISTING_USER_ID);
     expect(user?.username).toBe(EXISTING_USER_NAME);
+  });
+
+  it('should not validate web3 signature', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = 'invalid';
+
+    // act
+    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+
+    // assert
+    expect(user).toBeNull();
+  });
+
+  it('should not validate web3 signature - invalid wallet address', async () => {
+    // arrange
+    const publicAddress = 'invalid';
+    const signedMessage = EXISTING_SIGNED_MESSAGE;
+
+    // actsert
+    await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(NotFoundException);
+  });
+
+  it('should not validate web3 signature - user does not exist', async () => {
+    // arrange
+    const publicAddress = EXISTING_FAKE_ADDRESS;
+    const signedMessage = EXISTING_SIGNED_MESSAGE;
+
+    // actsert
+    await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(
+      InternalServerErrorException
+    );
   });
 });

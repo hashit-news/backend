@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
@@ -41,10 +41,10 @@ export class AuthService {
 
     // TODO - add friendly message to nonce
     const signature = walletLogin.nonce;
-    const result = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
-    if (!result.isValid) {
+    const isValid = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
+    if (!isValid) {
       this.logger?.debug(
-        { walletLogin, error: result.error },
+        { walletLogin },
         'Unable to validate signature for user id %s publicAddress %s',
         walletLogin.userId,
         walletLogin.publicAddress
@@ -56,7 +56,7 @@ export class AuthService {
     const user = await this.usersService.getUserById(walletLogin.userId);
 
     if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+      throw new InternalServerErrorException('User not found');
     }
     const { id, username } = user;
 
