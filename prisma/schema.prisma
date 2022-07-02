@@ -18,22 +18,22 @@ model User {
   loginAttempts   Int              @map("log_in_attempts") @db.Integer
   isLockedOut     Boolean          @map("is_locked_out") @db.Boolean
   lockoutExpiryAt DateTime?        @map("lockout_expiry_at") @db.Timestamp
-  createdBy       String?          @map("created_by") @db.VarChar(32)
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp
-  updatedBy       String?          @map("updated_by") @db.VarChar(32)
   updatedAt       DateTime         @default(now()) @map("updated_at") @db.Timestamp
   userWalletLogin UserWalletLogin?
+
+  @@map("users")
 }
 
 model UserWalletLogin {
   publicAddress String   @id @map("public_address") @db.VarChar(255)
   user          User     @relation(fields: [userId], references: [id])
   userId        String   @unique @map("user_id") @db.VarChar(32)
-  nonce         String   @map("private_key") @db.VarChar(255)
-  createdBy     String?  @map("created_by") @db.VarChar(32)
+  nonce         String   @map("nonce") @db.VarChar(255)
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp
-  updatedBy     String?  @map("updated_by") @db.VarChar(32)
   updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamp
+
+  @@map("user_wallet_logins")
 }
 
 enum RoleEnum {

@@ -6,8 +6,6 @@ import { ethers } from 'ethers';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
-  let wallet: ethers.Wallet;
-  let signature: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -16,23 +14,23 @@ describe('AppController (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    wallet = ethers.Wallet.createRandom();
   });
 
-  it('[GET] /auth/login - should get login info', async () => {
-    const response = await request(app.getHttpServer()).get(`/auth/login?publicAddress=${wallet.address}`).expect(200);
+  it('should login with new account', async () => {
+    const wallet = ethers.Wallet.createRandom();
+    const getLoginResponse = await request(app.getHttpServer())
+      .get(`/auth/login?publicAddress=${wallet.address}`)
+      .expect(200);
 
-    expect(response.body).toBeDefined();
-    expect(response.body).not.toBeNull();
-    expect(response.body?.publicAddress).toEqual(wallet.address);
-    expect(response.body?.signature).toBeDefined();
-    expect(response.body?.signature).not.toBeNull();
+    expect(getLoginResponse.body).toBeDefined();
+    expect(getLoginResponse.body).not.toBeNull();
+    expect(getLoginResponse.body?.publicAddress).toEqual(wallet.address);
+    expect(getLoginResponse.body?.signature).toBeDefined();
+    expect(getLoginResponse.body?.signature).not.toBeNull();
 
-    signature = response.body?.signature;
-  });
+    const signature = getLoginResponse.body?.signature;
+    const signedMessage = await wallet.signMessage(signature);
 
-  it('[GET] /auth/login - should validate signature and login', async () => {
-    const signedMessage = wallet.signMessage(signature);
     const response = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
@@ -43,7 +41,7 @@ describe('AppController (e2e)', () => {
 
     expect(response.body).toBeDefined();
     expect(response.body).not.toBeNull();
-    expect(response.body?.userId).toBeDefined();
+    expect(response.body?.id).toBeDefined();
     expect(response.body?.username).toBeDefined();
   });
 });

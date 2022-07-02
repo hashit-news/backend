@@ -2,32 +2,28 @@
 CREATE TYPE "role" AS ENUM ('admin', 'user');
 
 -- CreateTable
-CREATE TABLE "User" (
+CREATE TABLE "users" (
     "id" VARCHAR(32) NOT NULL,
     "username" VARCHAR(50),
     "last_logged_in_at" TIMESTAMP,
     "log_in_attempts" INTEGER NOT NULL,
     "is_locked_out" BOOLEAN NOT NULL,
     "lockout_expiry_at" TIMESTAMP,
-    "created_by" VARCHAR(32),
     "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_by" VARCHAR(32),
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "UserWalletLogin" (
+CREATE TABLE "user_wallet_logins" (
     "public_address" VARCHAR(255) NOT NULL,
     "user_id" VARCHAR(32) NOT NULL,
-    "private_key" VARCHAR(255) NOT NULL,
-    "created_by" VARCHAR(32),
+    "nonce" VARCHAR(255) NOT NULL,
     "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_by" VARCHAR(32),
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "UserWalletLogin_pkey" PRIMARY KEY ("public_address")
+    CONSTRAINT "user_wallet_logins_pkey" PRIMARY KEY ("public_address")
 );
 
 -- CreateTable
@@ -47,16 +43,16 @@ CREATE TABLE "roles" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+CREATE UNIQUE INDEX "users_username_key" ON "users"("username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "UserWalletLogin_user_id_key" ON "UserWalletLogin"("user_id");
+CREATE UNIQUE INDEX "user_wallet_logins_user_id_key" ON "user_wallet_logins"("user_id");
 
 -- AddForeignKey
-ALTER TABLE "UserWalletLogin" ADD CONSTRAINT "UserWalletLogin_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "user_wallet_logins" ADD CONSTRAINT "user_wallet_logins_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_roles" ADD CONSTRAINT "user_roles_role_id_fkey" FOREIGN KEY ("role_id") REFERENCES "roles"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
