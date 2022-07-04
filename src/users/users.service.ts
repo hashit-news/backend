@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
-import { User, UserWalletLogin } from '@prisma/client';
+import { UserWalletLogin } from '@prisma/client';
 import { PrismaService } from '../common/database/prisma.service';
 import { CryptoService } from '../common/security/crypto.service';
 import { Web3Service } from '../common/web3/web3.service';
@@ -58,8 +58,8 @@ export class UsersService {
    * @param id Id of the user
    * @returns User
    */
-  async getUserById(id: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({ where: { id } });
+  async getUserById(id: string) {
+    return await this.prisma.user.findUnique({ where: { id }, include: { roles: { include: { role: true } } } });
   }
 
   /**
@@ -67,7 +67,7 @@ export class UsersService {
    * @param username Username of the user
    * @returns User
    */
-  async getUserByUsername(username: string): Promise<User | null> {
-    return await this.prisma.user.findUnique({ where: { username } });
+  async getUserByUsername(username: string) {
+    return await this.prisma.user.findUnique({ where: { username }, include: { roles: { include: { role: true } } } });
   }
 }

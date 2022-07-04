@@ -17,7 +17,9 @@ export class AuthService {
 
     @InjectPinoLogger(AuthService.name)
     private readonly logger: PinoLogger
-  ) {}
+  ) {
+    this.jwtService;
+  }
 
   async getWeb3LoginInfo(publicAddress: string): Promise<Web3LoginInfoDto> {
     let walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
@@ -58,9 +60,11 @@ export class AuthService {
     if (!user) {
       throw new InternalServerErrorException('User not found');
     }
-    const { id, username } = user;
 
-    return { id, username };
+    const { id, username } = user;
+    const roles = user.roles.map(x => x.role.role);
+
+    return { id, username, roles };
   }
 
   async validateLocalAdminUser(username: string, password: string): Promise<UserDto | null> {
@@ -68,17 +72,12 @@ export class AuthService {
     const localPassword = this.configService.get<string>('SEED_ADMIN_PASSWORD');
 
     if (user && password === localPassword) {
-      return { ...user };
+      const { id, username } = user;
+      const roles = user.roles.map(x => x.role.role);
+
+      return { id, username, roles };
     }
 
     return null;
-  }
-
-  async generateJwt(user: UserDto) {
-    const payload = { username: user.username, sub: user.id };
-
-    return {
-      access_token: this.jwtService.sign(payload),
-    };
   }
 }
