@@ -3,7 +3,6 @@ import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { UsersService } from '../users/users.service';
-import { ConfigService } from '@nestjs/config';
 import { Web3Service } from '../common/web3/web3.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { ethers } from 'ethers';
@@ -94,7 +93,6 @@ describe('AuthService', () => {
           provide: getLoggerToken(AuthService.name),
           useValue: null,
         },
-        ConfigService,
         {
           provide: PrismaService,
           useValue: {

@@ -1,5 +1,4 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Web3Service } from '../common/web3/web3.service';
@@ -13,7 +12,6 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly web3Service: Web3Service,
-    private readonly configService: ConfigService,
 
     @InjectPinoLogger(AuthService.name)
     private readonly logger: PinoLogger
@@ -65,19 +63,5 @@ export class AuthService {
     const roles = user.roles.map(x => x.role.role);
 
     return { id, username, roles };
-  }
-
-  async validateLocalAdminUser(username: string, password: string): Promise<UserDto | null> {
-    const user = await this.usersService.getUserByUsername(username);
-    const localPassword = this.configService.get<string>('SEED_ADMIN_PASSWORD');
-
-    if (user && password === localPassword) {
-      const { id, username } = user;
-      const roles = user.roles.map(x => x.role.role);
-
-      return { id, username, roles };
-    }
-
-    return null;
   }
 }

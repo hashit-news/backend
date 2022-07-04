@@ -2,10 +2,15 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedE
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Web3LoginRequestDto } from './auth.models';
 import { AuthService } from './auth.service';
+import { TokenService } from './token.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService, @InjectPinoLogger() private readonly logger?: PinoLogger) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly tokenService: TokenService,
+    @InjectPinoLogger() private readonly logger?: PinoLogger
+  ) {}
 
   @Get('login')
   async getLoginInfo(@Query('publicAddress') publicAddress: string) {
@@ -33,7 +38,11 @@ export class AuthController {
         throw new UnauthorizedException();
       }
 
-      return user;
+      const access_token = await this.tokenService.generateJwtToken(user);
+
+      return {
+        access_token,
+      };
     } catch (err) {
       this.logger?.error(err, 'Error validating login info');
 

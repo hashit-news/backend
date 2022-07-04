@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { JwtService, JwtSignOptions } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions, JwtVerifyOptions } from '@nestjs/jwt';
 import { UserDto } from '../users/user.models';
 import authConfig from '../common/config/auth.config';
 import * as fs from 'fs';
@@ -12,32 +12,41 @@ export class TokenService {
     @Inject(authConfig.KEY) private readonly config: ConfigType<typeof authConfig>
   ) {}
 
-  async generateJwtToken(user: UserDto) {
+  async getJwtSignOptions(): Promise<JwtSignOptions> {
     const { issuer, expiresIn, privateKeyFile } = this.config;
     const algorithm = 'RS256';
     const encoding = 'utf8';
     const privateKey = await fs.promises.readFile(privateKeyFile, encoding);
-    const options: JwtSignOptions = {
+
+    return {
       issuer,
       expiresIn,
       algorithm,
       encoding,
       privateKey,
     };
-
-    return await this.jwtService.signAsync(user, options);
   }
 
-  async verifyJwtToken(token: string) {
+  async getJwtVerifyOptions(): Promise<JwtVerifyOptions> {
     const { issuer, publicKeyFile } = this.config;
     const algorithm = 'RS256';
     const encoding = 'utf8';
     const publicKey = await fs.promises.readFile(publicKeyFile, encoding);
 
-    return await this.jwtService.verifyAsync<UserDto>(token, {
+    return {
       issuer,
       algorithms: [algorithm],
       publicKey,
-    });
+    };
+  }
+
+  async generateJwtToken(user: UserDto) {
+    const options = await this.getJwtSignOptions();
+    return await this.jwtService.signAsync(user, options);
+  }
+
+  async verifyJwtToken(token: string) {
+    const options = await this.getJwtVerifyOptions();
+    return await this.jwtService.verifyAsync<UserDto>(token, options);
   }
 }
