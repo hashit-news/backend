@@ -82,17 +82,4 @@ export class UsersService {
   async getUserByUsername(username: string) {
     return await this.prisma.user.findUnique({ where: { username }, include: { roles: { include: { role: true } } } });
   }
-
-  async getUserPayloadById(userId: string) {
-    const user = this.prisma.user.findUnique({
-      where: { id: userId },
-      include: { roles: { include: { role: true } }, userWalletLogin: true },
-    });
-
-    if (!user) {
-      return null;
-    }
-
-    return {};
-  }
 }
