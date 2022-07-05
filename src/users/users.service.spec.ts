@@ -4,7 +4,7 @@ import { UsersService } from './users.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { CryptoService } from '../common/security/crypto.service';
 import { Web3Service } from '../common/web3/web3.service';
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 
 describe(UsersService.name, () => {
   let service: UsersService;
@@ -36,16 +36,23 @@ describe(UsersService.name, () => {
             },
             user: {
               create: jest.fn(val => {
-                if (val && val.data && val.data.userWalletLogin) {
+                if (
+                  val &&
+                  val.data &&
+                  val.data.userWalletLogin.create.publicAddress === '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+                ) {
                   return {
                     ...val.data,
                     userWalletLogin: {
                       ...val.data.userWalletLogin.create,
-                      user: {
-                        username: 'fujiwara_takumi_86',
-                      },
                     },
                   };
+                } else if (
+                  val &&
+                  val.data &&
+                  val.data.userWalletLogin.create.publicAddress == '0x0Ac1dF02185025F65202660F8167210A80dD5086'
+                ) {
+                  return {};
                 }
 
                 return null;
@@ -182,5 +189,13 @@ describe(UsersService.name, () => {
 
     // act
     await expect(service.getWalletLoginByPublicAddress(address)).rejects.toThrow(BadRequestException);
+  });
+
+  it('should fail to create web3login - wallet login not created', async () => {
+    // arrange
+    const address = '0x0Ac1dF02185025F65202660F8167210A80dD5086';
+
+    // actsert
+    await expect(service.createWeb3Login(address)).rejects.toThrow(InternalServerErrorException);
   });
 });

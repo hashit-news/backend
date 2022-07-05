@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, InternalServerErrorException } from '@
 import { PrismaService } from '../common/database/prisma.service';
 import { CryptoService } from '../common/security/crypto.service';
 import { Web3Service } from '../common/web3/web3.service';
-import { UserWalletLoginDto } from './user.models';
+import { UserDto, UserWalletLoginDto } from './user.models';
 
 @Injectable()
 export class UsersService {
@@ -70,7 +70,6 @@ export class UsersService {
   async getUserById(userId: string) {
     return await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { roles: { include: { role: true } } },
     });
   }
 
@@ -80,6 +79,28 @@ export class UsersService {
    * @returns User
    */
   async getUserByUsername(username: string) {
-    return await this.prisma.user.findUnique({ where: { username }, include: { roles: { include: { role: true } } } });
+    return await this.prisma.user.findUnique({ where: { username } });
+  }
+
+  async getUserRequestDataById(userId: string): Promise<UserDto | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { roles: { include: { role: true } }, userWalletLogin: true },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    if (!user.userWalletLogin) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      publicAddress: user.userWalletLogin?.publicAddress,
+      roles: user.roles.map(role => role.role.role),
+    };
   }
 }

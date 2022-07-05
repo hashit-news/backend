@@ -3,7 +3,7 @@ import { RoleEnum } from '@prisma/client';
 export interface UserDto {
   id: string;
   username?: string | null;
-  walletAddress: string;
+  publicAddress?: string;
   roles: RoleEnum[];
 }
 
