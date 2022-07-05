@@ -27,6 +27,7 @@ describe(UsersService.name, () => {
                   return {
                     publicAddress: val.where.publicAddress,
                     nonce: 'nonce',
+                    user: {},
                   };
                 }
 
@@ -40,6 +41,9 @@ describe(UsersService.name, () => {
                     ...val.data,
                     userWalletLogin: {
                       ...val.data.userWalletLogin.create,
+                      user: {
+                        username: 'fujiwara_takumi_86',
+                      },
                     },
                   };
                 }

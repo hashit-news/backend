@@ -15,6 +15,24 @@ export class Web3LoginRequestDto {
   signedMessage: string;
 }
 
+export interface AccessTokenResponseDto {
+  access_token: string;
+  token_type: 'Bearer';
+  expires_in: number;
+  refresh_token?: string;
+  scope?: string;
+}
+
+export interface UserIdUsernameDto {
+  id: string;
+  username?: string | null;
+}
+
+export interface JwtPayloadDto {
+  sub: string;
+  name?: string | null;
+}
+
 export interface UserRequest extends Request {
   user: UserDto;
 }

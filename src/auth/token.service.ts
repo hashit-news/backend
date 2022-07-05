@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService, JwtSignOptions, JwtVerifyOptions } from '@nestjs/jwt';
-import { UserDto } from '../users/user.models';
 import authConfig from '../common/config/auth.config';
 import * as fs from 'fs';
+import { JwtPayloadDto, UserIdUsernameDto } from './auth.models';
 
 @Injectable()
 export class TokenService {
@@ -40,13 +40,21 @@ export class TokenService {
     };
   }
 
-  async generateJwtToken(user: UserDto) {
+  async generateJwtToken(user: UserIdUsernameDto) {
     const options = await this.getJwtSignOptions();
-    return await this.jwtService.signAsync(user, options);
+    const payload: JwtPayloadDto = {
+      sub: user.id,
+    };
+
+    if (user.username) {
+      payload.name = user.username;
+    }
+
+    return await this.jwtService.signAsync(payload, options);
   }
 
   async verifyJwtToken(token: string) {
     const options = await this.getJwtVerifyOptions();
-    return await this.jwtService.verifyAsync<UserDto>(token, options);
+    return await this.jwtService.verifyAsync<JwtPayloadDto>(token, options);
   }
 }

@@ -6,7 +6,7 @@ import { UsersService } from '../users/users.service';
 import { Web3Service } from '../common/web3/web3.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { ethers } from 'ethers';
-import { InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { RoleEnum } from '@prisma/client';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
@@ -34,6 +34,7 @@ describe('AuthService', () => {
                   userId: EXISTING_USER_ID,
                   publicAddress: EXISTING_PUBLIC_ADDRESS,
                   nonce: EXISTING_NONCE,
+                  username: EXISTING_USER_NAME,
                 };
               } else if (val === EXISTING_FAKE_ADDRESS) {
                 return {
@@ -142,7 +143,6 @@ describe('AuthService', () => {
     expect(user).not.toBeNull();
     expect(user?.id).toBe(EXISTING_USER_ID);
     expect(user?.username).toBe(EXISTING_USER_NAME);
-    expect(user?.roles).toContain(RoleEnum.User);
   });
 
   it('should not validate web3 signature', async () => {
@@ -164,16 +164,5 @@ describe('AuthService', () => {
 
     // actsert
     await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(NotFoundException);
-  });
-
-  it('should not validate web3 signature - user does not exist', async () => {
-    // arrange
-    const publicAddress = EXISTING_FAKE_ADDRESS;
-    const signedMessage = EXISTING_SIGNED_MESSAGE;
-
-    // actsert
-    await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(
-      InternalServerErrorException
-    );
   });
 });

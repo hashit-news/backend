@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedException } from '@nestjs/common';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { Web3LoginRequestDto } from './auth.models';
+import { AccessTokenResponseDto, Web3LoginRequestDto } from './auth.models';
 import { AuthService } from './auth.service';
 import { TokenService } from './token.service';
 
@@ -29,7 +29,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async validateWeb3Signature(@Body() body: Web3LoginRequestDto) {
+  async validateWeb3Signature(@Body() body: Web3LoginRequestDto): Promise<AccessTokenResponseDto> {
     try {
       const { publicAddress, signedMessage } = body;
       const user = await this.authService.validateWeb3Signature(publicAddress, signedMessage);
@@ -42,6 +42,8 @@ export class AuthController {
 
       return {
         access_token,
+        expires_in: 3600,
+        token_type: 'Bearer',
       };
     } catch (err) {
       this.logger?.error(err, 'Error validating login info');

@@ -1,10 +1,9 @@
 import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserDto } from '../users/user.models';
 import { TokenService } from './token.service';
 import authConfig from '../common/config/auth.config';
-import { RoleEnum } from '@prisma/client';
+import { UserIdUsernameDto } from './auth.models';
 
 describe('TokenService', () => {
   let service: TokenService;
@@ -20,24 +19,21 @@ describe('TokenService', () => {
 
   it('should generate valid JWT', async () => {
     // arrange
-    const payload: UserDto = {
+    const user: UserIdUsernameDto = {
       id: '1',
-      username: 'test',
-      roles: [RoleEnum.Admin],
+      username: 'fujiwara_takumi',
     };
 
     // act
-    const token = await service.generateJwtToken(payload);
-    const decodedPayload = await service.verifyJwtToken(token);
+    const token = await service.generateJwtToken(user);
+    const payload = await service.verifyJwtToken(token);
 
     // assert
     expect(token).toBeDefined();
     expect(token).not.toBeNull();
-    expect(decodedPayload).toBeDefined();
-    expect(decodedPayload).not.toBeNull();
-    expect(decodedPayload.id).toEqual(payload.id);
-    expect(decodedPayload.username).toEqual(payload.username);
-    expect(decodedPayload.roles).toEqual(payload.roles);
-    expect(decodedPayload).toMatchObject(payload);
+    expect(payload).toBeDefined();
+    expect(payload).not.toBeNull();
+    expect(payload.sub).toEqual(user.id);
+    expect(payload.name).toEqual(user.username);
   });
 });

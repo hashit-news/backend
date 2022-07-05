@@ -1,10 +1,9 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Web3Service } from '../common/web3/web3.service';
-import { UserDto } from '../users/user.models';
 import { UsersService } from '../users/users.service';
-import { Web3LoginInfoDto } from './auth.models';
+import { UserIdUsernameDto, Web3LoginInfoDto } from './auth.models';
 
 @Injectable()
 export class AuthService {
@@ -32,7 +31,7 @@ export class AuthService {
     return { publicAddress: walletLogin.publicAddress, signature };
   }
 
-  async validateWeb3Signature(publicAddress: string, signedMessage: string): Promise<UserDto | null> {
+  async validateWeb3Signature(publicAddress: string, signedMessage: string): Promise<UserIdUsernameDto | null> {
     const walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
 
     if (!walletLogin) {
@@ -53,15 +52,6 @@ export class AuthService {
       return null;
     }
 
-    const user = await this.usersService.getUserById(walletLogin.userId);
-
-    if (!user) {
-      throw new InternalServerErrorException('User not found');
-    }
-
-    const { id, username } = user;
-    const roles = user.roles.map(x => x.role.role);
-
-    return { id, username, roles };
+    return { id: walletLogin.userId, username: walletLogin.username };
   }
 }
