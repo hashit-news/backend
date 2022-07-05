@@ -30,8 +30,6 @@ describe('AppController (e2e)', () => {
 
     const signature = getLoginResponse.body?.signature;
     const signedMessage = await wallet.signMessage(signature);
-    console.log(wallet.address, signature, signedMessage);
-
     const response = await request(app.getHttpServer())
       .post('/auth/login')
       .send({
@@ -39,7 +37,7 @@ describe('AppController (e2e)', () => {
         signedMessage,
       })
       .expect(200);
-    console.log(response.body);
+
     expect(response.body).toBeDefined();
     expect(response.body).not.toBeNull();
   });
