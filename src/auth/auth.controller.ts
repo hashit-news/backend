@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { ethers } from 'ethers';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import {
   AccessTokenErrorCode,
@@ -35,10 +36,18 @@ export class AuthController {
     }
   }
 
+  @Get('login/test')
+  async createAndSignWeb3LoginInfo() {
+    const wallet = ethers.Wallet.createRandom();
+    const loginInfo = await this.authService.getWeb3LoginInfo(wallet.address);
+    const signedMessage = await wallet.signMessage(loginInfo.signature);
+
+    return { publicAddress: wallet.address, signedMessage };
+  }
+
   @Post('token')
   @HttpCode(HttpStatus.OK)
   async getToken(@Body() body: AccessTokenRequestDto): Promise<AccessTokenResponseDto | AccessTokenErrorResponseDto> {
-    let user: UserIdUsernameDto | null;
     if (body.grant_type === GrantType.Web3) {
       if (!body.public_address || !body.signed_message) {
         return {
@@ -46,36 +55,27 @@ export class AuthController {
         };
       }
 
-      user = await this.validateWeb3(body.public_address, body.signed_message);
+      const user = await this.validateWeb3(body.public_address, body.signed_message);
+
+      if (!user) {
+        return {
+          error: AccessTokenErrorCode.InvalidGrant,
+        };
+      }
+
+      return await this.authService.generateAccessToken(user);
     } else if (body.grant_type === GrantType.RefreshToken) {
       if (!body.refresh_token) {
         return {
           error: AccessTokenErrorCode.InvalidRequest,
         };
       }
-      user = await this.validateRefreshToken(body.refresh_token);
+      return this.authService.generateRefreshedAccessToken(body.refresh_token);
     } else {
       return {
         error: AccessTokenErrorCode.UnsupportedGrantType,
       };
     }
-
-    if (!user) {
-      return {
-        error: AccessTokenErrorCode.InvalidGrant,
-      };
-    }
-
-    const signOptions = await this.tokenService.getAccessTokenSignOptions();
-    const token = await this.tokenService.generateJwtToken(user);
-    const refreshToken = await this.tokenService.generateRefreshToken(user);
-
-    return {
-      access_token: token,
-      expires_in: signOptions.expiresIn as number,
-      token_type: 'Bearer',
-      refresh_token: refreshToken,
-    };
   }
 
   async validateWeb3(publicAddress: string, signedMessage: string): Promise<UserIdUsernameDto | null> {
@@ -107,7 +107,7 @@ export class AuthController {
         throw new UnauthorizedException();
       }
 
-      const access_token = await this.tokenService.generateJwtToken(user);
+      const access_token = await this.tokenService.generateAccessToken(user);
 
       return {
         access_token,

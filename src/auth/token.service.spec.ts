@@ -4,6 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TokenService } from './token.service';
 import authConfig from '../common/config/auth.config';
 import { UserIdUsernameDto } from './auth.models';
+import { PrismaService } from '../common/database/prisma.service';
 
 describe('TokenService', () => {
   let service: TokenService;
@@ -11,7 +12,14 @@ describe('TokenService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [ConfigModule.forRoot({ load: [authConfig] })],
-      providers: [TokenService, JwtService],
+      providers: [
+        TokenService,
+        JwtService,
+        {
+          provide: PrismaService,
+          useValue: null,
+        },
+      ],
     }).compile();
 
     service = module.get<TokenService>(TokenService);
@@ -25,8 +33,8 @@ describe('TokenService', () => {
     };
 
     // act
-    const token = await service.generateJwtToken(user);
-    const payload = await service.verifyJwtToken(token);
+    const token = await service.generateAccessToken(user);
+    const payload = await service.verifyAccessToken(token);
 
     // assert
     expect(token).toBeDefined();

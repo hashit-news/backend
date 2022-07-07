@@ -2,7 +2,7 @@
 CREATE TYPE "role" AS ENUM ('admin', 'user');
 
 -- CreateEnum
-CREATE TYPE "token_type" AS ENUM ('refresh_token', 'access_token', 'email_verification_token');
+CREATE TYPE "token_type" AS ENUM ('refresh_token', 'email_verification_token');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -50,14 +50,13 @@ CREATE TABLE "roles" (
 -- CreateTable
 CREATE TABLE "user_tokens" (
     "user_id" VARCHAR(32) NOT NULL,
-    "token" VARCHAR(255) NOT NULL,
     "token_type" "token_type" NOT NULL,
+    "token" VARCHAR(255) NOT NULL,
     "expires_at" TIMESTAMP,
-    "revoked_at" TIMESTAMP,
     "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "user_tokens_pkey" PRIMARY KEY ("user_id","token")
+    CONSTRAINT "user_tokens_pkey" PRIMARY KEY ("user_id","token_type")
 );
 
 -- CreateIndex

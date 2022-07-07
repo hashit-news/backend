@@ -4,26 +4,35 @@ import { JwtService, JwtSignOptions, JwtVerifyOptions } from '@nestjs/jwt';
 import authConfig from '../common/config/auth.config';
 import * as fs from 'fs';
 import { JwtPayloadDto, UserIdUsernameDto } from './auth.models';
+import { PrismaService } from '../common/database/prisma.service';
+import { TokenType } from '@prisma/client';
+import * as moment from 'moment';
 
 @Injectable()
 export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly prisma: PrismaService,
     @Inject(authConfig.KEY) private readonly config: ConfigType<typeof authConfig>
   ) {}
 
-  async getJwtSignOptions(issuer: string, expiresIn: number, privateKeyFile: string): Promise<JwtSignOptions> {
+  async getJwtSignOptions(issuer: string, privateKeyFile: string, expiresIn?: number): Promise<JwtSignOptions> {
     const algorithm = 'RS256';
     const encoding = 'utf8';
     const privateKey = await fs.promises.readFile(privateKeyFile, encoding);
 
-    return {
+    const options: JwtSignOptions = {
       issuer,
-      expiresIn,
       algorithm,
       encoding,
       privateKey,
     };
+
+    if (expiresIn) {
+      options.expiresIn = expiresIn;
+    }
+
+    return options;
   }
 
   async getJwtVerifyOptions(): Promise<JwtVerifyOptions> {
@@ -41,16 +50,15 @@ export class TokenService {
 
   async getAccessTokenSignOptions() {
     const { issuer, expiresIn, privateKeyFile } = this.config;
-    return await this.getJwtSignOptions(issuer, expiresIn, privateKeyFile);
+    return await this.getJwtSignOptions(issuer, privateKeyFile, expiresIn);
   }
 
   async getRefreshTokenSignOptions() {
-    const { issuer, refreshTokenExpiresIn, privateKeyFile } = this.config;
-    return await this.getJwtSignOptions(issuer, refreshTokenExpiresIn, privateKeyFile);
+    const { issuer, privateKeyFile } = this.config;
+    return await this.getJwtSignOptions(issuer, privateKeyFile);
   }
 
-  async generateJwtToken(user: UserIdUsernameDto) {
-    const options = await this.getAccessTokenSignOptions();
+  async generateJwtToken(user: UserIdUsernameDto, options: JwtSignOptions) {
     const payload: JwtPayloadDto = {
       sub: user.id,
     };
@@ -62,22 +70,79 @@ export class TokenService {
     return await this.jwtService.signAsync(payload, options);
   }
 
-  async verifyJwtToken(token: string) {
+  async verifyJwtToken(token: string, options: JwtVerifyOptions) {
+    return await this.jwtService.verifyAsync<JwtPayloadDto>(token, options);
+  }
+
+  async generateAccessToken(user: UserIdUsernameDto) {
+    const options = await this.getAccessTokenSignOptions();
+    return await this.generateJwtToken(user, options);
+  }
+
+  async verifyAccessToken(token: string) {
     const options = await this.getJwtVerifyOptions();
     return await this.jwtService.verifyAsync<JwtPayloadDto>(token, options);
   }
 
   async generateRefreshToken(user: UserIdUsernameDto) {
     const options = await this.getRefreshTokenSignOptions();
-    const payload: JwtPayloadDto = {
-      sub: user.id,
-    };
+    return await this.generateJwtToken(user, options);
+  }
 
-    if (user.username) {
-      payload.name = user.username;
+  async getRefreshToken(userId: string) {
+    return await this.prisma.userToken.findUnique({
+      where: {
+        userId_tokenType: {
+          userId,
+          tokenType: TokenType.RefreshToken,
+        },
+      },
+    });
+  }
+
+  async upsertUserRefreshToken(userId: string, refreshToken: string) {
+    const existing = await this.getRefreshToken(userId);
+
+    if (existing) {
+      return await this.updateRefreshToken(userId, refreshToken);
     }
 
-    return await this.jwtService.signAsync(payload, options);
+    const now = moment.utc();
+    const expiresAt = now.add(this.config.refreshTokenExpiresIn, 'seconds');
+
+    return await this.prisma.userToken.create({
+      data: {
+        userId,
+        token: refreshToken,
+        tokenType: TokenType.RefreshToken,
+        expiresAt: expiresAt.toDate(),
+      },
+    });
+  }
+
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    return await this.prisma.userToken.update({
+      data: {
+        token: refreshToken,
+      },
+      where: {
+        userId_tokenType: {
+          userId,
+          tokenType: TokenType.RefreshToken,
+        },
+      },
+    });
+  }
+
+  async revokeRefreshToken(userId: string) {
+    return await this.prisma.userToken.delete({
+      where: {
+        userId_tokenType: {
+          userId,
+          tokenType: TokenType.RefreshToken,
+        },
+      },
+    });
   }
 
   async verifyRefreshToken(token: string) {
