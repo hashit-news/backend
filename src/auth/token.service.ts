@@ -12,8 +12,7 @@ export class TokenService {
     @Inject(authConfig.KEY) private readonly config: ConfigType<typeof authConfig>
   ) {}
 
-  async getJwtSignOptions(): Promise<JwtSignOptions> {
-    const { issuer, expiresIn, privateKeyFile } = this.config;
+  async getJwtSignOptions(issuer: string, expiresIn: number, privateKeyFile: string): Promise<JwtSignOptions> {
     const algorithm = 'RS256';
     const encoding = 'utf8';
     const privateKey = await fs.promises.readFile(privateKeyFile, encoding);
@@ -40,8 +39,18 @@ export class TokenService {
     };
   }
 
+  async getAccessTokenSignOptions() {
+    const { issuer, expiresIn, privateKeyFile } = this.config;
+    return await this.getJwtSignOptions(issuer, expiresIn, privateKeyFile);
+  }
+
+  async getRefreshTokenSignOptions() {
+    const { issuer, refreshTokenExpiresIn, privateKeyFile } = this.config;
+    return await this.getJwtSignOptions(issuer, refreshTokenExpiresIn, privateKeyFile);
+  }
+
   async generateJwtToken(user: UserIdUsernameDto) {
-    const options = await this.getJwtSignOptions();
+    const options = await this.getAccessTokenSignOptions();
     const payload: JwtPayloadDto = {
       sub: user.id,
     };
@@ -54,6 +63,24 @@ export class TokenService {
   }
 
   async verifyJwtToken(token: string) {
+    const options = await this.getJwtVerifyOptions();
+    return await this.jwtService.verifyAsync<JwtPayloadDto>(token, options);
+  }
+
+  async generateRefreshToken(user: UserIdUsernameDto) {
+    const options = await this.getRefreshTokenSignOptions();
+    const payload: JwtPayloadDto = {
+      sub: user.id,
+    };
+
+    if (user.username) {
+      payload.name = user.username;
+    }
+
+    return await this.jwtService.signAsync(payload, options);
+  }
+
+  async verifyRefreshToken(token: string) {
     const options = await this.getJwtVerifyOptions();
     return await this.jwtService.verifyAsync<JwtPayloadDto>(token, options);
   }

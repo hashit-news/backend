@@ -54,4 +54,13 @@ export class AuthService {
 
     return { id: walletLogin.userId, username: walletLogin.username };
   }
+
+  async validateRefreshToken(refreshToken: string): Promise<UserIdUsernameDto | null> {
+    const token = await this.jwtService.verifyAsync(refreshToken);
+    if (!token) {
+      return null;
+    }
+
+    return { id: token.id, username: token.username };
+  }
 }

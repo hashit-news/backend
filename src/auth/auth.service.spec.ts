@@ -7,7 +7,7 @@ import { Web3Service } from '../common/web3/web3.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { ethers } from 'ethers';
 import { NotFoundException } from '@nestjs/common';
-import { RoleEnum } from '@prisma/client';
+import { RoleType } from '@prisma/client';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
@@ -60,7 +60,7 @@ describe('AuthService', () => {
                 return {
                   id: EXISTING_USER_ID,
                   username: EXISTING_USER_NAME,
-                  roles: [{ role: { role: RoleEnum.User } }],
+                  roles: [{ role: { role: RoleType.User } }],
                 };
               }
 

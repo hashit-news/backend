@@ -1,10 +1,10 @@
-import { RoleEnum } from '@prisma/client';
+import { RoleType } from '@prisma/client';
 
 export interface UserDto {
   id: string;
   username?: string | null;
   publicAddress?: string;
-  roles: RoleEnum[];
+  roles: RoleType[];
 }
 
 export interface UserWalletLoginDto {

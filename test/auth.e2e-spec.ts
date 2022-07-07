@@ -37,7 +37,7 @@ describe('AppController (e2e)', () => {
         signedMessage,
       })
       .expect(200);
-
+    console.log(response);
     expect(response.body).toBeDefined();
     expect(response.body).not.toBeNull();
   });

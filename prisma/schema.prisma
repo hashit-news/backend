@@ -12,31 +12,34 @@ datasource db {
 
 model User {
   id              String           @id @default(cuid()) @db.VarChar(32)
-  username        String?          @unique @db.VarChar(50)
+  username        String?          @unique @db.VarChar(100)
+  email           String?          @unique @db.VarChar(100)
+  emailVerified   Boolean          @default(false)
   roles           UserRole[]
-  lastLoggedInAt  DateTime?        @map("last_logged_in_at") @db.Timestamp
-  loginAttempts   Int              @map("log_in_attempts") @db.Integer
-  isLockedOut     Boolean          @map("is_locked_out") @db.Boolean
-  lockoutExpiryAt DateTime?        @map("lockout_expiry_at") @db.Timestamp
   createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp
   updatedAt       DateTime         @default(now()) @map("updated_at") @db.Timestamp
   userWalletLogin UserWalletLogin?
+  userTokens      UserToken[]
 
   @@map("users")
 }
 
 model UserWalletLogin {
-  publicAddress String   @id @map("public_address") @db.VarChar(255)
-  user          User     @relation(fields: [userId], references: [id])
-  userId        String   @unique @map("user_id") @db.VarChar(32)
-  nonce         String   @map("nonce") @db.VarChar(255)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamp
-  updatedAt     DateTime @default(now()) @map("updated_at") @db.Timestamp
+  publicAddress   String    @id @map("public_address") @db.VarChar(255)
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String    @unique @map("user_id") @db.VarChar(32)
+  nonce           String    @map("nonce") @db.VarChar(255)
+  lastLoggedInAt  DateTime? @map("last_logged_in_at") @db.Timestamp
+  loginAttempts   Int       @map("log_in_attempts") @db.Integer
+  isLockedOut     Boolean   @map("is_locked_out") @db.Boolean
+  lockoutExpiryAt DateTime? @map("lockout_expiry_at") @db.Timestamp
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamp
 
   @@map("user_wallet_logins")
 }
 
-enum RoleEnum {
+enum RoleType {
   Admin  @map("admin")
   User   @map("user")
 
@@ -55,8 +58,30 @@ model UserRole {
 
 model Role {
   id    Int        @id @default(autoincrement())
-  role  RoleEnum
+  role  RoleType
   users UserRole[]
 
   @@map("roles")
+}
+
+enum TokenType {
+  RefreshToken            @map("refresh_token")
+  AccessToken             @map("access_token")
+  EmailVerificationToken  @map("email_verification_token")
+
+  @@map("token_type")
+}
+
+model UserToken {
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String    @map("user_id") @db.VarChar(32)
+  token     String    @unique @map("token") @db.VarChar(255)
+  tokenType TokenType @map("token_type")
+  expiresAt DateTime? @map("expires_at") @db.Timestamp
+  revokedAt DateTime? @map("revoked_at") @db.Timestamp
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamp
+
+  @@id([userId, token])
+  @@map("user_tokens")
 }

@@ -40,8 +40,6 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        loginAttempts: 0,
-        isLockedOut: false,
         roles: {
           create: [{ roleId: 2 }],
         },
@@ -49,6 +47,8 @@ export class UsersService {
           create: {
             publicAddress: address,
             nonce: this.cryptoService.generate256BitSecret(),
+            loginAttempts: 0,
+            isLockedOut: false,
           },
         },
       },
