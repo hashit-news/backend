@@ -21,7 +21,7 @@ export class AuthController {
     @InjectPinoLogger() private readonly logger?: PinoLogger
   ) {}
 
-  @Get('login')
+  @Get('web3')
   async getLoginInfo(@Query('publicAddress') publicAddress: string) {
     try {
       return await this.authService.getWeb3LoginInfo(publicAddress);
