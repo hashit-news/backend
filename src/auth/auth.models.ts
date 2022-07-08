@@ -38,11 +38,6 @@ export enum AccessTokenErrorCode {
   UnsupportedGrantType = 'unsupported_grant_type',
 }
 
-export interface AccessTokenErrorResponseDto {
-  error: AccessTokenErrorCode;
-  error_description?: string;
-}
-
 export interface AccessTokenResponseDto {
   access_token: string;
   token_type: 'Bearer';

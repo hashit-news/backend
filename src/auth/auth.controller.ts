@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, Res, UnauthorizedException } from '@nestjs/common';
 import { ethers } from 'ethers';
+import { Response } from 'express';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { AccessTokenException } from './auth.exceptions';
 import {
   AccessTokenErrorCode,
-  AccessTokenErrorResponseDto,
   AccessTokenRequestDto,
   AccessTokenResponseDto,
   GrantType,
@@ -47,34 +48,38 @@ export class AuthController {
 
   @Post('token')
   @HttpCode(HttpStatus.OK)
-  async getToken(@Body() body: AccessTokenRequestDto): Promise<AccessTokenResponseDto | AccessTokenErrorResponseDto> {
-    if (body.grant_type === GrantType.Web3) {
-      if (!body.public_address || !body.signed_message) {
-        return {
-          error: AccessTokenErrorCode.InvalidRequest,
-        };
+  async getToken(@Body() body: AccessTokenRequestDto, @Res() response: Response) {
+    try {
+      if (body.grant_type === GrantType.Web3) {
+        if (!body.public_address || !body.signed_message) {
+          throw new AccessTokenException(AccessTokenErrorCode.InvalidRequest);
+        }
+
+        const user = await this.validateWeb3(body.public_address, body.signed_message);
+
+        if (!user) {
+          throw new AccessTokenException(AccessTokenErrorCode.InvalidGrant);
+        }
+
+        return response.json(await this.authService.generateAccessToken(user));
+      } else if (body.grant_type === GrantType.RefreshToken) {
+        if (!body.refresh_token) {
+          throw new AccessTokenException(AccessTokenErrorCode.InvalidRequest);
+        }
+        return response.json(await this.authService.generateRefreshedAccessToken(body.refresh_token));
+      } else {
+        throw new AccessTokenException(AccessTokenErrorCode.UnsupportedGrantType);
+      }
+    } catch (err) {
+      if (err instanceof AccessTokenException) {
+        return response.status(HttpStatus.BAD_REQUEST).json({
+          error: err.getErrorCode(),
+        });
       }
 
-      const user = await this.validateWeb3(body.public_address, body.signed_message);
+      this.logger?.error(err, 'Error granting access token');
 
-      if (!user) {
-        return {
-          error: AccessTokenErrorCode.InvalidGrant,
-        };
-      }
-
-      return await this.authService.generateAccessToken(user);
-    } else if (body.grant_type === GrantType.RefreshToken) {
-      if (!body.refresh_token) {
-        return {
-          error: AccessTokenErrorCode.InvalidRequest,
-        };
-      }
-      return this.authService.generateRefreshedAccessToken(body.refresh_token);
-    } else {
-      return {
-        error: AccessTokenErrorCode.UnsupportedGrantType,
-      };
+      throw err;
     }
   }
 

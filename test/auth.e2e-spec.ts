@@ -49,7 +49,7 @@ describe('AppController (e2e)', () => {
     expect(response.body).not.toBeNull();
 
     const accessTokenResponse = response.body as AccessTokenResponseDto;
-    verifyAccessTokenResponse(accessTokenResponse);
+    await verifyAccessTokenResponse(accessTokenResponse);
 
     const refreshResponse = await request(app.getHttpServer())
       .post('/auth/token')
@@ -62,7 +62,7 @@ describe('AppController (e2e)', () => {
       .expect(200);
 
     const refreshedAccessTokenResponse = refreshResponse.body as AccessTokenResponseDto;
-    verifyAccessTokenResponse(refreshedAccessTokenResponse);
+    await verifyAccessTokenResponse(refreshedAccessTokenResponse);
   });
 
   const verifyAccessTokenResponse = async (accessTokenResponse: AccessTokenResponseDto) => {

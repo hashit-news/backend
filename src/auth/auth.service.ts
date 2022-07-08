@@ -4,6 +4,7 @@ import * as moment from 'moment';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Web3Service } from '../common/web3/web3.service';
 import { UsersService } from '../users/users.service';
+import { AccessTokenException } from './auth.exceptions';
 import { AccessTokenErrorCode, AccessTokenResponseDto, UserIdUsernameDto, Web3LoginInfoDto } from './auth.models';
 import { TokenService } from './token.service';
 
@@ -76,9 +77,7 @@ export class AuthService {
     const user = await this.validateRefreshToken(refreshToken);
 
     if (!user) {
-      return {
-        error: AccessTokenErrorCode.InvalidRequest,
-      };
+      throw new AccessTokenException(AccessTokenErrorCode.InvalidGrant);
     }
 
     const existingRefreshToken = await this.tokenService.getRefreshToken(user.id);
@@ -90,9 +89,7 @@ export class AuthService {
 
     if (revoke) {
       await this.tokenService.revokeRefreshToken(user.id);
-      return {
-        error: AccessTokenErrorCode.InvalidRequest,
-      };
+      throw new AccessTokenException(AccessTokenErrorCode.InvalidGrant);
     }
 
     return this.generateAccessToken(user);
