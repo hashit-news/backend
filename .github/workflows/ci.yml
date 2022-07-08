@@ -32,7 +32,7 @@ jobs:
       - name: Install dependencies
         run: yarn
       - name: Lint
-        run: yarn lint
+        run: yarn eslint:check
       - name: Prettier
         run: yarn prettier:check
       - name: Build
