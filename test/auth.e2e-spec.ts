@@ -3,7 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { ethers } from 'ethers';
-import { AccessTokenResponseDto } from '../src/auth/auth.models';
+import { AccessTokenResponse } from '../src/auth/auth.models';
 import { TokenService } from '../src/auth/token.service';
 
 describe('AppController (e2e)', () => {
@@ -37,35 +37,30 @@ describe('AppController (e2e)', () => {
 
     const response = await request(app.getHttpServer())
       .post('/auth/token')
-      .accept('application/x-www-form-urlencoded')
       .send({
-        grant_type: 'web3',
-        public_address: wallet.address,
-        signed_message: signedMessage,
+        publicAddress: wallet.address,
+        signedMessage: signedMessage,
       })
       .expect(200);
 
     expect(response.body).toBeDefined();
     expect(response.body).not.toBeNull();
 
-    const accessTokenResponse = response.body as AccessTokenResponseDto;
+    const accessTokenResponse = response.body as AccessTokenResponse;
     await verifyAccessTokenResponse(accessTokenResponse);
 
     const refreshResponse = await request(app.getHttpServer())
-      .post('/auth/token')
-      .accept('application/x-www-form-urlencoded')
+      .post('/auth/token/refresh')
       .send({
-        grant_type: 'refresh_token',
-        refresh_token: accessTokenResponse.refresh_token,
-        signed_message: signedMessage,
+        refreshToken: accessTokenResponse.refresh_token,
       })
       .expect(200);
 
-    const refreshedAccessTokenResponse = refreshResponse.body as AccessTokenResponseDto;
+    const refreshedAccessTokenResponse = refreshResponse.body as AccessTokenResponse;
     await verifyAccessTokenResponse(refreshedAccessTokenResponse);
   });
 
-  const verifyAccessTokenResponse = async (accessTokenResponse: AccessTokenResponseDto) => {
+  const verifyAccessTokenResponse = async (accessTokenResponse: AccessTokenResponse) => {
     const signOptions = await tokenService.getAccessTokenSignOptions();
 
     expect(accessTokenResponse).not.toBeNull();

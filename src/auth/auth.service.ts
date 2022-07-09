@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as moment from 'moment';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { Web3Service } from '../common/web3/web3.service';
 import { UsersService } from '../users/users.service';
-import { AccessTokenException } from './auth.exceptions';
-import { AccessTokenErrorCode, AccessTokenResponseDto, UserIdUsernameDto, Web3LoginInfoDto } from './auth.models';
+import { AccessTokenResponse, UserIdUsernameDto, Web3LoginInfoResponse } from './auth.models';
 import { TokenService } from './token.service';
 
 @Injectable()
@@ -22,7 +21,7 @@ export class AuthService {
     this.jwtService;
   }
 
-  async getWeb3LoginInfo(publicAddress: string): Promise<Web3LoginInfoDto> {
+  async getWeb3LoginInfo(publicAddress: string): Promise<Web3LoginInfoResponse> {
     let walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
 
     if (!walletLogin) {
@@ -59,7 +58,16 @@ export class AuthService {
     return { id: walletLogin.userId, username: walletLogin.username };
   }
 
-  async generateAccessToken(user: UserIdUsernameDto): Promise<AccessTokenResponseDto> {
+  async validateRefreshToken(refreshToken: string): Promise<UserIdUsernameDto | null> {
+    const token = await this.tokenService.verifyRefreshToken(refreshToken);
+    if (!token) {
+      return null;
+    }
+
+    return { id: token.sub, username: token.name };
+  }
+
+  async generateAccessToken(user: UserIdUsernameDto): Promise<AccessTokenResponse> {
     const signOptions = await this.tokenService.getAccessTokenSignOptions();
     const token = await this.tokenService.generateAccessToken(user);
     const refreshToken = await this.tokenService.generateRefreshToken(user);
@@ -73,11 +81,21 @@ export class AuthService {
     };
   }
 
-  async generateRefreshedAccessToken(refreshToken: string) {
+  async generateWeb3AccessToken(publicAddress: string, signedMessage: string): Promise<AccessTokenResponse> {
+    const user = await this.validateWeb3Signature(publicAddress, signedMessage);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    return await this.generateAccessToken(user);
+  }
+
+  async generateRefreshedAccessToken(refreshToken: string): Promise<AccessTokenResponse> {
     const user = await this.validateRefreshToken(refreshToken);
 
     if (!user) {
-      throw new AccessTokenException(AccessTokenErrorCode.InvalidGrant);
+      throw new UnauthorizedException();
     }
 
     const existingRefreshToken = await this.tokenService.getRefreshToken(user.id);
@@ -89,18 +107,9 @@ export class AuthService {
 
     if (revoke) {
       await this.tokenService.revokeRefreshToken(user.id);
-      throw new AccessTokenException(AccessTokenErrorCode.InvalidGrant);
+      throw new UnauthorizedException();
     }
 
     return this.generateAccessToken(user);
-  }
-
-  async validateRefreshToken(refreshToken: string): Promise<UserIdUsernameDto | null> {
-    const token = await this.tokenService.verifyRefreshToken(refreshToken);
-    if (!token) {
-      return null;
-    }
-
-    return { id: token.sub, username: token.name };
   }
 }

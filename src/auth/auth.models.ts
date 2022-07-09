@@ -1,12 +1,12 @@
-import { IsEnum, IsEthereumAddress, IsNotEmpty } from 'class-validator';
+import { IsEthereumAddress, IsNotEmpty } from 'class-validator';
 import { UserDto } from '../users/user.models';
 
-export interface Web3LoginInfoDto {
+export interface Web3LoginInfoResponse {
   publicAddress: string;
   signature: string;
 }
 
-export class Web3LoginRequestDto {
+export class Web3LoginRequest {
   @IsEthereumAddress()
   @IsNotEmpty()
   publicAddress: string;
@@ -15,30 +15,12 @@ export class Web3LoginRequestDto {
   signedMessage: string;
 }
 
-export enum GrantType {
-  Web3 = 'web3',
-  RefreshToken = 'refresh_token',
-}
-
-export class AccessTokenRequestDto {
+export class RefreshTokenRequest {
   @IsNotEmpty()
-  @IsEnum(GrantType)
-  grant_type: GrantType;
-  refresh_token?: string;
-  public_address?: string;
-  signed_message?: string;
+  refreshToken: string;
 }
 
-export enum AccessTokenErrorCode {
-  InvalidRequest = 'invalid_request',
-  InvalidClient = 'invalid_client',
-  InvalidGrant = 'invalid_grant',
-  InvalidScope = 'invalid_scope',
-  UnauthorizedClient = 'unauthorized_client',
-  UnsupportedGrantType = 'unsupported_grant_type',
-}
-
-export interface AccessTokenResponseDto {
+export interface AccessTokenResponse {
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
