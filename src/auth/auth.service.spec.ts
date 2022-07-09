@@ -9,6 +9,8 @@ import { ethers } from 'ethers';
 import { NotFoundException } from '@nestjs/common';
 import { RoleType } from '@prisma/client';
 import { TokenService } from './token.service';
+import { ConfigModule } from '@nestjs/config';
+import authConfig from '../common/config/auth.config';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
@@ -24,6 +26,7 @@ describe('AuthService', () => {
   beforeEach(async () => {
     newWallet = ethers.Wallet.createRandom();
     const module: TestingModule = await Test.createTestingModule({
+      imports: [ConfigModule.forRoot({ load: [authConfig] })],
       providers: [
         AuthService,
         {
@@ -67,6 +70,8 @@ describe('AuthService', () => {
 
               return null;
             }),
+            updateLoginSuccess: jest.fn(),
+            updateLoginFailed: jest.fn(),
           },
         },
         {
