@@ -1,9 +1,9 @@
 import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import * as moment from 'moment';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import authConfig from '../common/config/auth.config';
+import { TimeService } from '../common/time/time.service';
 import { Web3Service } from '../common/web3/web3.service';
 import { UsersService } from '../users/users.service';
 import { AccessTokenResponse, UserIdUsernameDto, Web3LoginInfoResponse } from './auth.models';
@@ -16,6 +16,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly web3Service: Web3Service,
     private readonly tokenService: TokenService,
+    private readonly timeService: TimeService,
     @Inject(authConfig.KEY)
     private readonly config: ConfigType<typeof authConfig>,
     @InjectPinoLogger(AuthService.name)
@@ -31,7 +32,7 @@ export class AuthService {
       walletLogin = await this.usersService.createWeb3Login(publicAddress);
     }
 
-    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > moment.utc().toDate()) {
+    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > this.timeService.getUtcNow().toDate()) {
       throw new UnauthorizedException('Account is locked');
     }
 
@@ -77,7 +78,7 @@ export class AuthService {
     const revoke =
       !existingRefreshToken ||
       existingRefreshToken.token !== refreshToken ||
-      (existingRefreshToken.expiresAt && existingRefreshToken.expiresAt < moment.utc().toDate());
+      (existingRefreshToken.expiresAt && existingRefreshToken.expiresAt < this.timeService.getUtcNow().toDate());
 
     if (revoke) {
       await this.tokenService.revokeRefreshToken(user.id);
@@ -94,7 +95,7 @@ export class AuthService {
       throw new NotFoundException('Invalid public address');
     }
 
-    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > moment.utc().toDate()) {
+    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > this.timeService.getUtcNow().toDate()) {
       throw new UnauthorizedException('Account is locked');
     }
 
@@ -121,7 +122,7 @@ export class AuthService {
       }
 
       if (loginAttempts >= this.config.maxLoginAttempts) {
-        lockoutExpiryAt = moment.utc().add(this.config.lockoutDurationSecs, 'seconds').toDate();
+        lockoutExpiryAt = this.timeService.getUtcNow().add(this.config.lockoutDurationSecs, 'seconds').toDate();
       }
 
       await this.usersService.updateLoginFailed(walletLogin.userId, loginAttempts, lockoutExpiryAt);

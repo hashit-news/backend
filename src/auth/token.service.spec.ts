@@ -5,6 +5,7 @@ import { TokenService } from './token.service';
 import authConfig from '../common/config/auth.config';
 import { UserIdUsernameDto } from './auth.models';
 import { PrismaService } from '../common/database/prisma.service';
+import { TimeService } from '../common/time/time.service';
 
 describe('TokenService', () => {
   let service: TokenService;
@@ -19,6 +20,7 @@ describe('TokenService', () => {
           provide: PrismaService,
           useValue: null,
         },
+        TimeService,
       ],
     }).compile();
 

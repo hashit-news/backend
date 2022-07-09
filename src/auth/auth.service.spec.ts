@@ -11,6 +11,7 @@ import { RoleType } from '@prisma/client';
 import { TokenService } from './token.service';
 import { ConfigModule } from '@nestjs/config';
 import authConfig from '../common/config/auth.config';
+import { TimeService } from '../common/time/time.service';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
@@ -110,6 +111,7 @@ describe('AuthService', () => {
           provide: TokenService,
           useValue: null,
         },
+        TimeService,
       ],
     }).compile();
 

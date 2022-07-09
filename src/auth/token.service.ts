@@ -6,12 +6,13 @@ import * as fs from 'fs';
 import { JwtPayloadDto, UserIdUsernameDto } from './auth.models';
 import { PrismaService } from '../common/database/prisma.service';
 import { TokenType } from '@prisma/client';
-import * as moment from 'moment';
+import { TimeService } from '../common/time/time.service';
 
 @Injectable()
 export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly timeService: TimeService,
     private readonly prisma: PrismaService,
     @Inject(authConfig.KEY) private readonly config: ConfigType<typeof authConfig>
   ) {}
@@ -107,7 +108,7 @@ export class TokenService {
       return await this.updateRefreshToken(userId, refreshToken);
     }
 
-    const now = moment.utc();
+    const now = this.timeService.getUtcNow();
     const expiresAt = now.add(this.config.refreshTokenExpiresIn, 'seconds');
 
     return await this.prisma.userToken.create({
