@@ -48,7 +48,6 @@ export class UsersService {
             publicAddress: address,
             nonce: this.cryptoService.generate256BitSecret(),
             loginAttempts: 0,
-            isLockedOut: false,
           },
         },
       },
@@ -102,5 +101,28 @@ export class UsersService {
       publicAddress: user.userWalletLogin?.publicAddress,
       roles: user.roles.map(role => role.role.role),
     };
+  }
+
+  async updateLoginSuccess(userId: string) {
+    return await this.prisma.userWalletLogin.update({
+      where: { userId: userId },
+      data: {
+        lastLoggedInAt: new Date(),
+        loginAttempts: 0,
+        lockoutExpiryAt: null,
+        nonce: this.cryptoService.generate256BitSecret(),
+      },
+    });
+  }
+
+  async updateLoginFailed(userId: string, loginAttempts: number, lockoutExpiryAt?: Date | null) {
+    return await this.prisma.userWalletLogin.update({
+      where: { userId: userId },
+      data: {
+        loginAttempts,
+        lockoutExpiryAt,
+        nonce: this.cryptoService.generate256BitSecret(),
+      },
+    });
   }
 }

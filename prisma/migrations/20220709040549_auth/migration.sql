@@ -23,7 +23,6 @@ CREATE TABLE "user_wallet_logins" (
     "nonce" VARCHAR(255) NOT NULL,
     "last_logged_in_at" TIMESTAMP,
     "log_in_attempts" INTEGER NOT NULL,
-    "is_locked_out" BOOLEAN NOT NULL,
     "lockout_expiry_at" TIMESTAMP,
     "created_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

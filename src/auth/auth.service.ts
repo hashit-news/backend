@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as moment from 'moment';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import authConfig from '../common/config/auth.config';
 import { Web3Service } from '../common/web3/web3.service';
 import { UsersService } from '../users/users.service';
 import { AccessTokenResponse, UserIdUsernameDto, Web3LoginInfoResponse } from './auth.models';
@@ -14,7 +16,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly web3Service: Web3Service,
     private readonly tokenService: TokenService,
-
+    @Inject(authConfig.KEY)
+    private readonly config: ConfigType<typeof authConfig>,
     @InjectPinoLogger(AuthService.name)
     private readonly logger: PinoLogger
   ) {
@@ -28,43 +31,14 @@ export class AuthService {
       walletLogin = await this.usersService.createWeb3Login(publicAddress);
     }
 
+    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > moment.utc().toDate()) {
+      throw new UnauthorizedException('Account is locked');
+    }
+
     // TODO - add friendly message to nonce
     const signature = walletLogin.nonce;
 
     return { publicAddress: walletLogin.publicAddress, signature };
-  }
-
-  async validateWeb3Signature(publicAddress: string, signedMessage: string): Promise<UserIdUsernameDto | null> {
-    const walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
-
-    if (!walletLogin) {
-      throw new NotFoundException('Invalid public address');
-    }
-
-    // TODO - add friendly message to nonce
-    const signature = walletLogin.nonce;
-    const isValid = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
-    if (!isValid) {
-      this.logger?.debug(
-        { walletLogin },
-        'Unable to validate signature for user id %s publicAddress %s',
-        walletLogin.userId,
-        walletLogin.publicAddress
-      );
-
-      return null;
-    }
-
-    return { id: walletLogin.userId, username: walletLogin.username };
-  }
-
-  async validateRefreshToken(refreshToken: string): Promise<UserIdUsernameDto | null> {
-    const token = await this.tokenService.verifyRefreshToken(refreshToken);
-    if (!token) {
-      return null;
-    }
-
-    return { id: token.sub, username: token.name };
   }
 
   async generateAccessToken(user: UserIdUsernameDto): Promise<AccessTokenResponse> {
@@ -111,5 +85,61 @@ export class AuthService {
     }
 
     return this.generateAccessToken(user);
+  }
+
+  async validateWeb3Signature(publicAddress: string, signedMessage: string): Promise<UserIdUsernameDto | null> {
+    const walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
+
+    if (!walletLogin) {
+      throw new NotFoundException('Invalid public address');
+    }
+
+    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > moment.utc().toDate()) {
+      throw new UnauthorizedException('Account is locked');
+    }
+
+    // TODO - add friendly message to nonce
+    const signature = walletLogin.nonce;
+    const isValid = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
+    if (!isValid) {
+      this.logger?.debug(
+        { walletLogin },
+        'Unable to validate signature for user id %s publicAddress %s',
+        walletLogin.userId,
+        walletLogin.publicAddress
+      );
+
+      let loginAttempts = 0;
+      let lockoutExpiryAt: Date | null = null;
+
+      // if lockout expiry has a value, it means that the user was previously locked out
+      // in which case we want to reset their login attempts.
+      if (walletLogin.lockoutExpiryAt) {
+        loginAttempts = 1;
+      } else {
+        loginAttempts = walletLogin.loginAttempts + 1;
+      }
+
+      if (loginAttempts >= this.config.maxLoginAttempts) {
+        lockoutExpiryAt = moment.utc().add(this.config.lockoutDurationSecs, 'seconds').toDate();
+      }
+
+      await this.usersService.updateLoginFailed(walletLogin.userId, loginAttempts, lockoutExpiryAt);
+
+      return null;
+    } else {
+      await this.usersService.updateLoginSuccess(walletLogin.userId);
+
+      return { id: walletLogin.userId, username: walletLogin.username };
+    }
+  }
+
+  async validateRefreshToken(refreshToken: string): Promise<UserIdUsernameDto | null> {
+    const token = await this.tokenService.verifyRefreshToken(refreshToken);
+    if (!token) {
+      return null;
+    }
+
+    return { id: token.sub, username: token.name };
   }
 }

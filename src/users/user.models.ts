@@ -12,4 +12,6 @@ export interface UserWalletLoginDto {
   publicAddress: string;
   nonce: string;
   username?: string | null;
+  loginAttempts: number;
+  lockoutExpiryAt?: Date | null;
 }

@@ -31,7 +31,6 @@ model UserWalletLogin {
   nonce           String    @map("nonce") @db.VarChar(255)
   lastLoggedInAt  DateTime? @map("last_logged_in_at") @db.Timestamp
   loginAttempts   Int       @map("log_in_attempts") @db.Integer
-  isLockedOut     Boolean   @map("is_locked_out") @db.Boolean
   lockoutExpiryAt DateTime? @map("lockout_expiry_at") @db.Timestamp
   createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp
   updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamp
