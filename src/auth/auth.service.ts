@@ -81,7 +81,10 @@ export class AuthService {
       (existingRefreshToken.expiresAt && existingRefreshToken.expiresAt < this.timeService.getUtcNow().toDate());
 
     if (revoke) {
-      await this.tokenService.revokeRefreshToken(user.id);
+      if (existingRefreshToken) {
+        await this.tokenService.revokeRefreshToken(user.id);
+      }
+
       throw new UnauthorizedException();
     }
 

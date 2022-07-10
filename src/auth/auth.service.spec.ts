@@ -6,12 +6,15 @@ import { UsersService } from '../users/users.service';
 import { Web3Service } from '../common/web3/web3.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { ethers } from 'ethers';
-import { NotFoundException } from '@nestjs/common';
-import { RoleType } from '@prisma/client';
+import { NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { RoleType, TokenType } from '@prisma/client';
 import { TokenService } from './token.service';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigType } from '@nestjs/config';
 import authConfig from '../common/config/auth.config';
 import { TimeService } from '../common/time/time.service';
+import { UserWalletLoginDto } from '../users/user.models';
+import * as moment from 'moment';
+import { AccessTokenResponse, UserIdUsernameDto } from './auth.models';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
@@ -24,6 +27,11 @@ const EXISTING_FAKE_ADDRESS = 'fake';
 describe('AuthService', () => {
   let service: AuthService;
   let newWallet: ethers.Wallet;
+  let userService: UsersService;
+  let timeService: TimeService;
+  let tokenService: TokenService;
+  let config: ConfigType<typeof authConfig>;
+
   beforeEach(async () => {
     newWallet = ethers.Wallet.createRandom();
     const module: TestingModule = await Test.createTestingModule({
@@ -75,12 +83,7 @@ describe('AuthService', () => {
             updateLoginFailed: jest.fn(),
           },
         },
-        {
-          provide: JwtService,
-          useValue: {
-            sign: jest.fn(),
-          },
-        },
+        JwtService,
         {
           provide: Web3Service,
           useValue: {
@@ -107,15 +110,21 @@ describe('AuthService', () => {
             user: { findUnique: jest.fn() },
           },
         },
+        TokenService,
         {
-          provide: TokenService,
-          useValue: null,
+          provide: TimeService,
+          useValue: {
+            getUtcNow: jest.fn(() => moment('2020-01-01T00:00:00.000Z')),
+          },
         },
-        TimeService,
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
+    userService = module.get<UsersService>(UsersService);
+    timeService = module.get<TimeService>(TimeService);
+    tokenService = module.get<TokenService>(TokenService);
+    config = module.get<ConfigType<typeof authConfig>>(authConfig.KEY);
   });
 
   it('should get existing web3 login info', async () => {
@@ -140,6 +149,24 @@ describe('AuthService', () => {
     // assert
     expect(loginInfo.publicAddress).toBe(publicAddress);
     expect(loginInfo.signature).toBe(NEW_NONCE);
+  });
+
+  it('should failed to get web3 login info - account is locked', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const wallet: UserWalletLoginDto = {
+      userId: EXISTING_USER_ID,
+      publicAddress: EXISTING_PUBLIC_ADDRESS,
+      nonce: EXISTING_NONCE,
+      username: EXISTING_USER_NAME,
+      lockoutExpiryAt: timeService.getUtcNow().add(1, 'second').toDate(),
+      loginAttempts: 3,
+    };
+
+    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
+
+    // actsert
+    await expect(service.getWeb3LoginInfo(publicAddress)).rejects.toThrowError(UnauthorizedException);
   });
 
   it('should validate web3 signature', async () => {
@@ -177,4 +204,179 @@ describe('AuthService', () => {
     // actsert
     await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(NotFoundException);
   });
+
+  it('should generate access token', async () => {
+    // arrange
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+
+    tokenService.upsertUserRefreshToken = jest.fn();
+
+    // act
+    const res = await service.generateAccessToken(user);
+
+    // assert
+    const payload = await verifyAccessTokenResponse(res);
+    expect(payload.sub).toBe(user.id);
+    expect(payload.name).toBe(user.username);
+    expect(tokenService.upsertUserRefreshToken).toBeCalledTimes(1);
+  });
+
+  it('should generate web3 access token', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = EXISTING_SIGNED_MESSAGE;
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+
+    jest.spyOn(service, 'validateWeb3Signature').mockImplementation(async () => user);
+    tokenService.upsertUserRefreshToken = jest.fn();
+
+    // act
+    const res = await service.generateWeb3AccessToken(publicAddress, signedMessage);
+
+    // assert
+    const payload = await verifyAccessTokenResponse(res);
+    expect(payload.sub).toBe(user.id);
+    expect(payload.name).toBe(user.username);
+    expect(tokenService.upsertUserRefreshToken).toBeCalledTimes(1);
+  });
+
+  it('should not generate web3 access token - user not verified', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = 'invalid';
+
+    // actsert
+    await expect(service.generateWeb3AccessToken(publicAddress, signedMessage)).rejects.toThrowError(
+      UnauthorizedException
+    );
+  });
+
+  it('should generate access token from refresh token', async () => {
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+    const refreshToken = 'abc';
+    const existingRefreshToken = {
+      userId: EXISTING_USER_ID,
+      token: refreshToken,
+      tokenType: TokenType.RefreshToken,
+      expiresAt: timeService.getUtcNow().add(1, 'second').toDate(),
+      createdAt: timeService.getUtcNow().toDate(),
+      updatedAt: timeService.getUtcNow().toDate(),
+    };
+
+    tokenService.upsertUserRefreshToken = jest.fn();
+    jest.spyOn(tokenService, 'getRefreshTokenByUserId').mockImplementation(async () => existingRefreshToken);
+    jest.spyOn(service, 'validateRefreshToken').mockImplementation(async () => user);
+
+    // act
+    const res = await service.generateRefreshedAccessToken(refreshToken);
+
+    // assert
+    const payload = await verifyAccessTokenResponse(res);
+    expect(payload.sub).toBe(user.id);
+    expect(payload.name).toBe(user.username);
+    expect(tokenService.upsertUserRefreshToken).toBeCalledTimes(1);
+  });
+
+  it('should not generate access token from refresh token - refresh token expired', async () => {
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+    const refreshToken = 'abc';
+    const existingRefreshToken = {
+      userId: EXISTING_USER_ID,
+      token: refreshToken,
+      tokenType: TokenType.RefreshToken,
+      expiresAt: timeService.getUtcNow().add(-1, 'second').toDate(),
+      createdAt: timeService.getUtcNow().toDate(),
+      updatedAt: timeService.getUtcNow().toDate(),
+    };
+
+    tokenService.revokeRefreshToken = jest.fn();
+    jest.spyOn(tokenService, 'getRefreshTokenByUserId').mockImplementation(async () => existingRefreshToken);
+    jest.spyOn(service, 'validateRefreshToken').mockImplementation(async () => user);
+
+    // actsert
+    await expect(service.generateRefreshedAccessToken(refreshToken)).rejects.toThrowError(UnauthorizedException);
+    expect(tokenService.revokeRefreshToken).toBeCalledTimes(1);
+  });
+
+  it('should not generate access token from refresh token - refresh token not matching', async () => {
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+    const refreshToken = 'abc';
+    const existingRefreshToken = {
+      userId: EXISTING_USER_ID,
+      token: 'SOME_OTHER_TOKEN',
+      tokenType: TokenType.RefreshToken,
+      expiresAt: timeService.getUtcNow().add(1, 'second').toDate(),
+      createdAt: timeService.getUtcNow().toDate(),
+      updatedAt: timeService.getUtcNow().toDate(),
+    };
+
+    tokenService.revokeRefreshToken = jest.fn();
+    jest.spyOn(tokenService, 'getRefreshTokenByUserId').mockImplementation(async () => existingRefreshToken);
+    jest.spyOn(service, 'validateRefreshToken').mockImplementation(async () => user);
+
+    // actsert
+    await expect(service.generateRefreshedAccessToken(refreshToken)).rejects.toThrowError(UnauthorizedException);
+    expect(tokenService.revokeRefreshToken).toBeCalledTimes(1);
+  });
+
+  it('should not generate access token from refresh token - refresh token does not exist', async () => {
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+    const refreshToken = 'abc';
+
+    jest.spyOn(tokenService, 'getRefreshTokenByUserId').mockImplementation(async () => null);
+    jest.spyOn(service, 'validateRefreshToken').mockImplementation(async () => user);
+
+    // actsert
+    await expect(service.generateRefreshedAccessToken(refreshToken)).rejects.toThrowError(UnauthorizedException);
+  });
+
+  it('should not generate access token from refresh token - invalid refresh token', async () => {
+    const refreshToken = 'abc';
+
+    jest.spyOn(service, 'validateRefreshToken').mockImplementation(async () => null);
+
+    // actsert
+    await expect(service.generateRefreshedAccessToken(refreshToken)).rejects.toThrowError(UnauthorizedException);
+  });
+
+  const verifyAccessTokenResponse = async (res: AccessTokenResponse) => {
+    const accessTokenVerified = await tokenService.verifyAccessToken(res.access_token);
+    const refreshTokenVerified = await tokenService.verifyRefreshToken(res.refresh_token || '');
+
+    expect(res).toBeDefined();
+    expect(res).not.toBeNull();
+    expect(res.access_token).not.toBeNull();
+    expect(res.refresh_token).toBeDefined();
+    expect(res.refresh_token).not.toBeNull();
+    expect(res.expires_in).toBe(config.expiresIn);
+    expect(res.token_type).toBe('Bearer');
+    expect(accessTokenVerified).toBeDefined();
+    expect(accessTokenVerified).not.toBeNull();
+    expect(accessTokenVerified?.sub).toBe(EXISTING_USER_ID);
+    expect(accessTokenVerified?.name).toBe(EXISTING_USER_NAME);
+    expect(refreshTokenVerified).toBeDefined();
+    expect(refreshTokenVerified).not.toBeNull();
+    expect(refreshTokenVerified?.sub).toBe(EXISTING_USER_ID);
+    expect(refreshTokenVerified?.name).toBe(EXISTING_USER_NAME);
+
+    return accessTokenVerified;
+  };
 });
