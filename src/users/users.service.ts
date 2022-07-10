@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
 import { CryptoService } from '../common/security/crypto.service';
+import { TimeService } from '../common/time/time.service';
 import { Web3Service } from '../common/web3/web3.service';
 import { UserDto, UserWalletLoginDto } from './user.models';
 
@@ -9,7 +10,8 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly web3Service: Web3Service,
-    private readonly cryptoService: CryptoService
+    private readonly cryptoService: CryptoService,
+    private readonly timeService: TimeService
   ) {}
 
   async getWalletLoginByPublicAddress(publicAddress: string): Promise<UserWalletLoginDto | null> {
@@ -88,17 +90,17 @@ export class UsersService {
     });
 
     if (!user) {
-      return null;
+      throw new NotFoundException('User not found');
     }
 
     if (!user.userWalletLogin) {
-      return null;
+      throw new NotFoundException('User wallet login not found');
     }
 
     return {
       id: user.id,
       username: user.username,
-      publicAddress: user.userWalletLogin?.publicAddress,
+      publicAddress: user.userWalletLogin.publicAddress,
       roles: user.roles.map(role => role.role.role),
     };
   }
@@ -107,7 +109,7 @@ export class UsersService {
     return await this.prisma.userWalletLogin.update({
       where: { userId: userId },
       data: {
-        lastLoggedInAt: new Date(),
+        lastLoggedInAt: this.timeService.getUtcNow().toDate(),
         loginAttempts: 0,
         lockoutExpiryAt: null,
         nonce: this.cryptoService.generate256BitSecret(),
