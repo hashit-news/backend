@@ -13,7 +13,7 @@ import * as moment from 'moment';
 const EXISTING_USER_ID = '1';
 const EXISTING_REFRESH_TOKEN = 'existing-refresh-token';
 
-describe('TokenService', () => {
+describe(TokenService.name, () => {
   let service: TokenService;
   let config: ConfigType<typeof authConfig>;
 
