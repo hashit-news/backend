@@ -90,7 +90,7 @@ export class TokenService {
     return await this.generateJwtToken(user, options);
   }
 
-  async getRefreshToken(userId: string) {
+  async getRefreshTokenByUserId(userId: string) {
     return await this.prisma.userToken.findUnique({
       where: {
         userId_tokenType: {
@@ -102,7 +102,7 @@ export class TokenService {
   }
 
   async upsertUserRefreshToken(userId: string, refreshToken: string) {
-    const existing = await this.getRefreshToken(userId);
+    const existing = await this.getRefreshTokenByUserId(userId);
 
     if (existing) {
       return await this.updateRefreshToken(userId, refreshToken);

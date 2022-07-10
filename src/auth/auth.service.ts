@@ -73,7 +73,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const existingRefreshToken = await this.tokenService.getRefreshToken(user.id);
+    const existingRefreshToken = await this.tokenService.getRefreshTokenByUserId(user.id);
 
     const revoke =
       !existingRefreshToken ||
