@@ -16,7 +16,7 @@ export class AuthController {
         throw err;
       }
 
-      throw new UnauthorizedException(err);
+      throw new UnauthorizedException();
     }
   }
 
