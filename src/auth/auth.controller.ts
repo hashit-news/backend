@@ -1,20 +1,17 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedException } from '@nestjs/common';
 import { ethers } from 'ethers';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { RefreshTokenRequest, Web3LoginRequest } from './auth.models';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService, @InjectPinoLogger() private readonly logger?: PinoLogger) {}
+  constructor(private readonly authService: AuthService) {}
 
   @Get('web3')
   async getLoginInfo(@Query('publicAddress') publicAddress: string) {
     try {
       return await this.authService.getWeb3LoginInfo(publicAddress);
     } catch (err) {
-      this.logger?.error(err, 'Error getting login info');
-
       if (err instanceof UnauthorizedException) {
         throw err;
       }

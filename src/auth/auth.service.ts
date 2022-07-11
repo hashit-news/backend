@@ -1,7 +1,6 @@
 import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import authConfig from '../common/config/auth.config';
 import { TimeService } from '../common/time/time.service';
 import { Web3Service } from '../common/web3/web3.service';
@@ -18,9 +17,7 @@ export class AuthService {
     private readonly tokenService: TokenService,
     private readonly timeService: TimeService,
     @Inject(authConfig.KEY)
-    private readonly config: ConfigType<typeof authConfig>,
-    @InjectPinoLogger(AuthService.name)
-    private readonly logger: PinoLogger
+    private readonly config: ConfigType<typeof authConfig>
   ) {
     this.jwtService;
   }
@@ -106,13 +103,6 @@ export class AuthService {
     const signature = walletLogin.nonce;
     const isValid = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
     if (!isValid) {
-      this.logger?.debug(
-        { walletLogin },
-        'Unable to validate signature for user id %s publicAddress %s',
-        walletLogin.userId,
-        walletLogin.publicAddress
-      );
-
       let loginAttempts = 0;
       let lockoutExpiryAt: Date | null = null;
 

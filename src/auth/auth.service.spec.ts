@@ -4,7 +4,6 @@ import { AuthService } from './auth.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { Web3Service } from '../common/web3/web3.service';
-import { getLoggerToken } from 'nestjs-pino';
 import { ethers } from 'ethers';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { RoleType, TokenType } from '@prisma/client';
@@ -24,7 +23,7 @@ const EXISTING_USER_ID = '123';
 const EXISTING_USER_NAME = 'fujiwara_takumi_86';
 const EXISTING_FAKE_ADDRESS = 'fake';
 
-describe('AuthService', () => {
+describe(AuthService.name, () => {
   let service: AuthService;
   let newWallet: ethers.Wallet;
   let userService: UsersService;
@@ -99,10 +98,6 @@ describe('AuthService', () => {
               return false;
             }),
           },
-        },
-        {
-          provide: getLoggerToken(AuthService.name),
-          useValue: null,
         },
         {
           provide: PrismaService,
@@ -182,6 +177,7 @@ describe('AuthService', () => {
     expect(user).not.toBeNull();
     expect(user?.id).toBe(EXISTING_USER_ID);
     expect(user?.username).toBe(EXISTING_USER_NAME);
+    expect(userService.updateLoginSuccess).toBeCalledTimes(1);
   });
 
   it('should not validate web3 signature', async () => {
@@ -194,6 +190,95 @@ describe('AuthService', () => {
 
     // assert
     expect(user).toBeNull();
+    expect(userService.updateLoginFailed).toBeCalledTimes(1);
+  });
+
+  it('should not validate web3 signature and lock account', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = 'invalid';
+    const wallet: UserWalletLoginDto = {
+      userId: EXISTING_USER_ID,
+      publicAddress: EXISTING_PUBLIC_ADDRESS,
+      nonce: EXISTING_NONCE,
+      username: EXISTING_USER_NAME,
+      lockoutExpiryAt: null,
+      loginAttempts: config.maxLoginAttempts - 1, // set current login attempts 1 less than max
+    };
+
+    let actualLockoutExpiryAt: Date | null = null;
+    let actualLoginAttempts: number | null = null;
+    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
+    userService.updateLoginFailed = jest.fn(async (userId, loginAttempts, lockoutExpiryAt: Date | null) => {
+      actualLockoutExpiryAt = lockoutExpiryAt;
+      actualLoginAttempts = loginAttempts;
+      return {
+        userId,
+        publicAddress: EXISTING_PUBLIC_ADDRESS,
+        nonce: EXISTING_NONCE,
+        username: EXISTING_USER_NAME,
+        lockoutExpiryAt,
+        loginAttempts,
+        lastLoggedInAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    });
+
+    // act
+    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+
+    // assert
+    expect(user).toBeNull();
+    expect(userService.updateLoginFailed).toBeCalledTimes(1);
+    expect(actualLoginAttempts).toBe(config.maxLoginAttempts);
+    expect(actualLockoutExpiryAt).toBeDefined();
+    expect(moment(actualLockoutExpiryAt).unix()).toBeCloseTo(
+      timeService.getUtcNow().add(config.lockoutDurationSecs, 'seconds').unix()
+    );
+  });
+
+  it('should not validate web3 signature and increase login attempt', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = 'invalid';
+    const wallet: UserWalletLoginDto = {
+      userId: EXISTING_USER_ID,
+      publicAddress: EXISTING_PUBLIC_ADDRESS,
+      nonce: EXISTING_NONCE,
+      username: EXISTING_USER_NAME,
+      lockoutExpiryAt: timeService.getUtcNow().add(-1, 'second').toDate(),
+      loginAttempts: config.maxLoginAttempts, // set current login attempts 1 less than max
+    };
+
+    let actualLockoutExpiryAt: Date | null = null;
+    let actualLoginAttempts: number | null = null;
+    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
+    userService.updateLoginFailed = jest.fn(async (userId, loginAttempts, lockoutExpiryAt: Date | null) => {
+      actualLockoutExpiryAt = lockoutExpiryAt;
+      actualLoginAttempts = loginAttempts;
+      return {
+        userId,
+        publicAddress: EXISTING_PUBLIC_ADDRESS,
+        nonce: EXISTING_NONCE,
+        username: EXISTING_USER_NAME,
+        lockoutExpiryAt,
+        loginAttempts,
+        lastLoggedInAt: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+    });
+
+    // act
+    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+
+    // assert
+    expect(user).toBeNull();
+    expect(userService.updateLoginFailed).toBeCalledTimes(1);
+    expect(actualLockoutExpiryAt).toBeDefined();
+    expect(actualLockoutExpiryAt).toBeNull();
+    expect(actualLoginAttempts).toBe(1);
   });
 
   it('should not validate web3 signature - invalid wallet address', async () => {
@@ -203,6 +288,27 @@ describe('AuthService', () => {
 
     // actsert
     await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(NotFoundException);
+  });
+
+  it('should not validate web3 signature - account is locked', async () => {
+    // arrange
+    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const signedMessage = EXISTING_SIGNED_MESSAGE;
+    const wallet: UserWalletLoginDto = {
+      userId: EXISTING_USER_ID,
+      publicAddress: EXISTING_PUBLIC_ADDRESS,
+      nonce: EXISTING_NONCE,
+      username: EXISTING_USER_NAME,
+      lockoutExpiryAt: timeService.getUtcNow().add(1, 'second').toDate(),
+      loginAttempts: 3,
+    };
+
+    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
+
+    // actsert
+    await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(
+      UnauthorizedException
+    );
   });
 
   it('should generate access token', async () => {
@@ -379,4 +485,36 @@ describe('AuthService', () => {
 
     return accessTokenVerified;
   };
+
+  it('should validate refresh token', async () => {
+    // arrange
+    const user: UserIdUsernameDto = {
+      id: EXISTING_USER_ID,
+      username: EXISTING_USER_NAME,
+    };
+
+    const refreshToken = await tokenService.generateRefreshToken(user);
+
+    // act
+    const res = await service.validateRefreshToken(refreshToken);
+
+    // aseert
+    expect(res).toBeDefined();
+    expect(res).not.toBeNull();
+    expect(res?.id).toBe(user.id);
+    expect(res?.username).toBe(user.username);
+  });
+
+  it('should not validate refresh token', async () => {
+    // arrange
+    tokenService.verifyRefreshToken = jest.fn().mockImplementation(() => null);
+    const refreshToken = 'invalid';
+
+    // act
+    const res = await service.validateRefreshToken(refreshToken);
+
+    // aseert
+    expect(res).toBeDefined();
+    expect(res).toBeNull();
+  });
 });
