@@ -11,11 +11,74 @@ datasource db {
 }
 
 model User {
-  id        String   @id @db.VarChar(42)
-  username  String?  @db.VarChar(50)
-  nonce     String   @default(cuid()) @db.VarChar(32)
-  createdAt DateTime @default(now()) @db.Timestamp
-  updatedAt DateTime @default(now()) @db.Timestamp
+  id              String           @id @default(cuid()) @db.VarChar(32)
+  username        String?          @unique @db.VarChar(100)
+  email           String?          @unique @db.VarChar(100)
+  emailVerified   Boolean          @default(false)
+  roles           UserRole[]
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp
+  updatedAt       DateTime         @default(now()) @map("updated_at") @db.Timestamp
+  userWalletLogin UserWalletLogin?
+  userTokens      UserToken[]
 
-  @@unique([username])
+  @@map("users")
+}
+
+model UserWalletLogin {
+  publicAddress   String    @id @map("public_address") @db.VarChar(255)
+  user            User      @relation(fields: [userId], references: [id])
+  userId          String    @unique @map("user_id") @db.VarChar(32)
+  nonce           String    @map("nonce") @db.VarChar(255)
+  lastLoggedInAt  DateTime? @map("last_logged_in_at") @db.Timestamp
+  loginAttempts   Int       @map("log_in_attempts") @db.Integer
+  lockoutExpiryAt DateTime? @map("lockout_expiry_at") @db.Timestamp
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamp
+
+  @@map("user_wallet_logins")
+}
+
+enum RoleType {
+  Admin  @map("admin")
+  User   @map("user")
+
+  @@map("role")
+}
+
+model UserRole {
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @map("user_id") @db.VarChar(32)
+  role   Role   @relation(fields: [roleId], references: [id])
+  roleId Int    @map("role_id")
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model Role {
+  id    Int        @id @default(autoincrement())
+  role  RoleType
+  users UserRole[]
+
+  @@map("roles")
+}
+
+enum TokenType {
+  RefreshToken            @map("refresh_token")
+  EmailVerificationToken  @map("email_verification_token")
+
+  @@map("token_type")
+}
+
+model UserToken {
+  user      User      @relation(fields: [userId], references: [id])
+  userId    String    @map("user_id") @db.VarChar(32)
+  tokenType TokenType @map("token_type")
+  token     String    @unique @map("token") @db.VarChar(255)
+  expiresAt DateTime? @map("expires_at") @db.Timestamp
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp
+  updatedAt DateTime  @default(now()) @map("updated_at") @db.Timestamp
+
+  @@id([userId, tokenType])
+  @@map("user_tokens")
 }

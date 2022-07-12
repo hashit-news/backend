@@ -3,15 +3,19 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from 'nestjs-pino';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { CommonModule } from './common/common.module';
 import expressConfig from './common/config/express.config';
 import loggingConfig from './common/config/logging.config';
+import authConfig from './common/config/auth.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       cache: true,
       isGlobal: true,
-      load: [expressConfig, loggingConfig],
+      load: [expressConfig, loggingConfig, authConfig],
     }),
     LoggerModule.forRootAsync({
       inject: [ConfigService],
@@ -23,6 +27,9 @@ import loggingConfig from './common/config/logging.config';
         },
       }),
     }),
+    CommonModule,
+    AuthModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

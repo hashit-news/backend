@@ -5,7 +5,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 export class AppService {
   constructor(
     @InjectPinoLogger(AppService.name)
-    private readonly logger: PinoLogger
+    private readonly logger?: PinoLogger
   ) {}
 
   getHello(): string {

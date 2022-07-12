@@ -3,7 +3,7 @@ import { getLoggerToken } from 'nestjs-pino';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
-describe('AppController', () => {
+describe(AppController.name, () => {
   let appController: AppController;
 
   beforeEach(async () => {

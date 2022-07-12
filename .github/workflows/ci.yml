@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -13,11 +14,31 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: ['>=17.0.0']
-
+        node: ['>=16.0.0']
+    env:
+      NODE_ENV: Production
+      APP_PORT: 8080
+      APP_LOGLEVEL: 'debug'
+      AUTH_JWT_DEFAULT_EXPIRY_SECS: 900 #15 minutes
+      AUTH_JWT_PRIVATE_KEY_FILE: ./private.key
+      AUTH_JWT_PUBLIC_KEY_FILE: ./public.key
+      AUTH_JWT_ISSUER: hashit
+      AUTH_JWT_REFRESH_TOKEN_EXPIRY: 604800 #1 week
+      AUTH_MAX_LOGIN_ATTEMPTS: 5
+      AUTH_LOCKOUT_DURATION_SECS: 300 #5 minutes
+      SEED_ADMIN_USER_ID: cl3pelamf0000pes46cyjmlm0
+      SEED_ADMIN_USERNAME: admin
+      SEED_ADMIN_PASSWORD: admin
+      DATABASE_NAME: hashit
+      DATABASE_USER: hashit
+      DATABASE_PASS: hashit
+      DATABASE_PORT: 5432
+      DATABASE_URL: postgresql://hashit:hashit@localhost:5432/hashit?schema=public
     steps:
       - name: Checkout source code
         uses: actions/checkout@v3
+      - name: Start docker
+        run: docker-compose up -d
       - name: Cache node modules
         uses: actions/cache@v3
         with:
@@ -32,10 +53,15 @@ jobs:
       - name: Install dependencies
         run: yarn
       - name: Lint
-        run: yarn lint
+        run: yarn eslint:check
       - name: Prettier
         run: yarn prettier:check
       - name: Build
         run: yarn build
       - name: Test
         run: yarn test
+      - name: Test e2e
+        run: |
+          yarn prisma migrate dev
+          yarn prisma db seed
+          yarn test:e2e

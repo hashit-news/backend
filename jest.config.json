@@ -5,7 +5,15 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "collectCoverageFrom": ["**/*.(t|j)s"],
+  "collectCoverageFrom": [
+    "**/*.(t|j)s",
+    "!**/*.module.(t|j)s",
+    "!**/main.(t|j)s",
+    "!**/node_modules/**",
+    "!**/dist/**",
+    "!**/coverage/**",
+    "!**/*.config.(t|j)s"
+  ],
   "coverageDirectory": "../coverage",
   "testEnvironment": "node"
 }
