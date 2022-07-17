@@ -1,4 +1,4 @@
-export interface ProblemDetail {
+export class ProblemDetail {
   status: number;
   title: string;
   type: string;
@@ -7,7 +7,7 @@ export interface ProblemDetail {
   [key: string]: unknown;
 }
 
-export interface ErrorDetail {
+export class ErrorDetail {
   message: string;
   error?: {
     type?: string;

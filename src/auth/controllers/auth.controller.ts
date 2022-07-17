@@ -1,11 +1,16 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedException } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ethers } from 'ethers';
+import { ProblemDetail } from '../../common/filters/problem-detail/problem-detail.models';
 import { RefreshTokenRequest, Web3LoginRequest } from '../dtos/auth.models';
 import { AuthService } from '../services/auth.service';
 
 @ApiTags('auth')
 @Controller('auth')
+@ApiResponse({ status: 401, type: ProblemDetail, description: 'Unauthorized' })
+@ApiResponse({ status: 403, type: ProblemDetail, description: 'Forbidden' })
+@ApiResponse({ status: 404, type: ProblemDetail, description: 'Not found' })
+@ApiResponse({ status: 500, type: ProblemDetail, description: 'Internal Service Error' })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
