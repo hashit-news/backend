@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
-import { PrismaService } from '../common/database/prisma.service';
-import { UsersService } from '../users/users.service';
-import { Web3Service } from '../common/web3/web3.service';
+import { PrismaService } from '../../common/database/prisma.service';
+import { UsersService } from '../../users/users.service';
+import { Web3Service } from '../../common/web3/web3.service';
 import { ethers } from 'ethers';
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { RoleType, TokenType } from '@prisma/client';
-import { TokenService } from './token.service';
+import { TokenService } from '../services/token.service';
 import { ConfigModule, ConfigType } from '@nestjs/config';
-import authConfig from '../common/config/auth.config';
-import { TimeService } from '../common/time/time.service';
-import { UserWalletLoginDto } from '../users/user.models';
+import authConfig from '../../common/config/auth.config';
+import { TimeService } from '../../common/time/time.service';
+import { UserWalletLoginDto } from '../../users/user.models';
 import * as moment from 'moment';
-import { AccessTokenResponse, UserIdUsernameDto } from './auth.models';
+import { AccessTokenResponse, UserIdUsernameDto } from '../dtos/auth.models';
 
 const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';

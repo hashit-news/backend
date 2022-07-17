@@ -1,8 +1,10 @@
 import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UnauthorizedException } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { ethers } from 'ethers';
-import { RefreshTokenRequest, Web3LoginRequest } from './auth.models';
-import { AuthService } from './auth.service';
+import { RefreshTokenRequest, Web3LoginRequest } from '../dtos/auth.models';
+import { AuthService } from '../services/auth.service';
 
+@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

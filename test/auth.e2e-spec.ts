@@ -3,8 +3,8 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { ethers } from 'ethers';
-import { AccessTokenResponse } from '../src/auth/auth.models';
-import { TokenService } from '../src/auth/token.service';
+import { AccessTokenResponse } from '../src/auth/dtos/auth.models';
+import { TokenService } from '../src/auth/services/token.service';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;

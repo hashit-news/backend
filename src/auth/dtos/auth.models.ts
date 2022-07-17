@@ -1,5 +1,5 @@
 import { IsEthereumAddress, IsNotEmpty } from 'class-validator';
-import { UserDto } from '../users/user.models';
+import { UserDto } from '../../users/user.models';
 
 export interface Web3LoginInfoResponse {
   publicAddress: string;

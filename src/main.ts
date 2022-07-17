@@ -1,6 +1,7 @@
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { ExpressConfig } from './common/config/express.config';
@@ -9,6 +10,7 @@ import { ProblemDetailFilter } from './common/filters/problem-detail/problem-det
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.enableCors();
   app.useGlobalFilters(new ProblemDetailFilter());
   app.useGlobalPipes(
     new ValidationPipe({
@@ -28,6 +30,22 @@ async function bootstrap() {
   const prismaService = app.get(PrismaService);
 
   app.useLogger(logger);
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('hashit API')
+    .setVersion('1.0')
+    .addTag('hashit')
+    .addBearerAuth()
+    .build();
+
+  const swaggerOptions: SwaggerDocumentOptions = {
+    operationIdFactory: (_controllerKey: string, methodKey: string) => methodKey,
+  };
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig, swaggerOptions);
+  SwaggerModule.setup('docs', app, document, {
+    explorer: true,
+  });
 
   logger.log(`Nest application is running on port ${expressConfig.port}`);
 
