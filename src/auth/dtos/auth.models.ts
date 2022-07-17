@@ -1,7 +1,7 @@
 import { IsEthereumAddress, IsNotEmpty } from 'class-validator';
-import { UserDto } from '../users/user.models';
+import { UserDto } from '../../users/user.models';
 
-export interface Web3LoginInfoResponse {
+export class Web3LoginInfoResponse {
   publicAddress: string;
   signature: string;
 }
@@ -20,7 +20,7 @@ export class RefreshTokenRequest {
   refreshToken: string;
 }
 
-export interface AccessTokenResponse {
+export class AccessTokenResponse {
   access_token: string;
   token_type: 'Bearer';
   expires_in: number;
@@ -28,12 +28,12 @@ export interface AccessTokenResponse {
   scope?: string;
 }
 
-export interface UserIdUsernameDto {
+export class UserIdUsernameDto {
   id: string;
   username?: string | null;
 }
 
-export interface JwtPayloadDto {
+export class JwtPayloadDto {
   sub: string;
   name?: string | null;
 }

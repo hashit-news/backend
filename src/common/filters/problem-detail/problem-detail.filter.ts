@@ -1,6 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { ErrorDetail } from './problem-detail.interfaces';
+import { ErrorDetail } from './problem-detail.models';
 import * as _ from 'underscore';
 import { PROBLEM_CONTENT_TYPE, PROBLEM_TYPE_BASE_URL } from './constants';
 

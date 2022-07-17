@@ -1,6 +1,6 @@
 import { BadRequestException, HttpException, HttpStatus } from '@nestjs/common';
 import { ProblemDetailFilter } from './problem-detail.filter';
-import { ProblemDetail } from './problem-detail.interfaces';
+import { ProblemDetail } from './problem-detail.models';
 import { PROBLEM_CONTENT_TYPE, PROBLEM_TYPE_BASE_URL } from './constants';
 
 const mockJson = jest.fn();

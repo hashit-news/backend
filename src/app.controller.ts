@@ -1,7 +1,11 @@
 import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { RoleType } from '@prisma/client';
 import { AppService } from './app.service';
-import { UserRequest } from './auth/auth.models';
-import { JwtAuthGuard } from './auth/jwt.guard';
+import { Roles } from './auth/decorators/role.decorator';
+import { UserRequest } from './auth/dtos/auth.models';
+import { JwtAuthGuard } from './auth/guards/jwt.guard';
+import { RolesGuard } from './auth/guards/role.guard';
 
 @Controller()
 export class AppController {
@@ -13,7 +17,9 @@ export class AppController {
   }
 
   @Get('/protected')
-  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleType.Admin)
   getProtectedHello(@Request() req: UserRequest) {
     return req.user;
   }

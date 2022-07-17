@@ -1,11 +1,11 @@
 import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import authConfig from '../common/config/auth.config';
-import { TimeService } from '../common/time/time.service';
-import { Web3Service } from '../common/web3/web3.service';
-import { UsersService } from '../users/users.service';
-import { AccessTokenResponse, UserIdUsernameDto, Web3LoginInfoResponse } from './auth.models';
+import authConfig from '../../common/config/auth.config';
+import { TimeService } from '../../common/time/time.service';
+import { Web3Service } from '../../common/web3/web3.service';
+import { UsersService } from '../../users/users.service';
+import { AccessTokenResponse, UserIdUsernameDto, Web3LoginInfoResponse } from '../dtos/auth.models';
 import { TokenService } from './token.service';
 
 @Injectable()

@@ -1,8 +1,8 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
-import { AccessTokenResponse } from './auth.models';
-import { AuthService } from './auth.service';
+import { AccessTokenResponse } from '../dtos/auth.models';
+import { AuthService } from '../services/auth.service';
 
 describe(AuthController.name, () => {
   let controller: AuthController;

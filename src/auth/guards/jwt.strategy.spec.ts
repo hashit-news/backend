@@ -2,14 +2,14 @@ import { UnauthorizedException } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { RoleType } from '@prisma/client';
-import authConfig from '../common/config/auth.config';
-import { PrismaService } from '../common/database/prisma.service';
-import { CryptoService } from '../common/security/crypto.service';
-import { TimeService } from '../common/time/time.service';
-import { Web3Service } from '../common/web3/web3.service';
-import { UserDto } from '../users/user.models';
-import { UsersService } from '../users/users.service';
-import { JwtPayloadDto } from './auth.models';
+import authConfig from '../../common/config/auth.config';
+import { PrismaService } from '../../common/database/prisma.service';
+import { CryptoService } from '../../common/security/crypto.service';
+import { TimeService } from '../../common/time/time.service';
+import { Web3Service } from '../../common/web3/web3.service';
+import { UserDto } from '../../users/user.models';
+import { UsersService } from '../../users/users.service';
+import { JwtPayloadDto } from './../dtos/auth.models';
 import { JwtStrategy } from './jwt.strategy';
 
 describe(JwtStrategy.name, () => {

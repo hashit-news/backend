@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService, JwtSignOptions, JwtVerifyOptions } from '@nestjs/jwt';
-import authConfig from '../common/config/auth.config';
+import authConfig from '../../common/config/auth.config';
 import * as fs from 'fs';
-import { JwtPayloadDto, UserIdUsernameDto } from './auth.models';
-import { PrismaService } from '../common/database/prisma.service';
+import { PrismaService } from '../../common/database/prisma.service';
 import { TokenType } from '@prisma/client';
-import { TimeService } from '../common/time/time.service';
+import { TimeService } from '../../common/time/time.service';
+import { JwtPayloadDto, UserIdUsernameDto } from '../dtos/auth.models';
 
 @Injectable()
 export class TokenService {
