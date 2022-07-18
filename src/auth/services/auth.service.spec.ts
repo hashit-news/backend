@@ -15,13 +15,14 @@ import { UserWalletLoginDto } from '../../users/user.models';
 import * as moment from 'moment';
 import { AccessTokenResponse, UserIdUsernameDto } from '../dtos/auth.models';
 
-const EXISTING_PUBLIC_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
+const EXISTING_WALLET_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
 const EXISTING_NONCE = 'nonce';
 const NEW_NONCE = 'nonce1';
 const EXISTING_USER_ID = '123';
 const EXISTING_USER_NAME = 'fujiwara_takumi_86';
 const EXISTING_FAKE_ADDRESS = 'fake';
+const EXISTING_USER_EMAIL = 'fake@email.com';
 
 describe(AuthService.name, () => {
   let service: AuthService;
@@ -40,19 +41,19 @@ describe(AuthService.name, () => {
         {
           provide: UsersService,
           useValue: {
-            getWalletLoginByPublicAddress: jest.fn(val => {
-              if (val === EXISTING_PUBLIC_ADDRESS) {
+            getUserByWalletAddress: jest.fn(val => {
+              if (val === EXISTING_WALLET_ADDRESS) {
                 return {
-                  userId: EXISTING_USER_ID,
-                  publicAddress: EXISTING_PUBLIC_ADDRESS,
-                  nonce: EXISTING_NONCE,
+                  id: EXISTING_USER_ID,
+                  walletAddress: EXISTING_WALLET_ADDRESS,
+                  walletSigningNonce: EXISTING_NONCE,
                   username: EXISTING_USER_NAME,
                 };
               } else if (val === EXISTING_FAKE_ADDRESS) {
                 return {
-                  userId: 'NOT EXISTS',
-                  publicAddress: EXISTING_PUBLIC_ADDRESS,
-                  nonce: EXISTING_NONCE,
+                  id: 'NOT EXISTS',
+                  walletAddress: EXISTING_WALLET_ADDRESS,
+                  walletSigningNonce: EXISTING_NONCE,
                 };
               }
 
@@ -60,9 +61,9 @@ describe(AuthService.name, () => {
             }),
             createWeb3Login: jest.fn(val => {
               return {
-                publicAddress: val,
+                walletAddress: val,
                 userId: EXISTING_USER_ID,
-                nonce: NEW_NONCE,
+                walletSigningNonce: NEW_NONCE,
                 createdAt: new Date(),
                 updatedAt: new Date(),
               };
@@ -86,9 +87,9 @@ describe(AuthService.name, () => {
         {
           provide: Web3Service,
           useValue: {
-            validateSignature: jest.fn((publicAddress, signature, signedMessage) => {
+            validateSignature: jest.fn((walletAddress, signature, signedMessage) => {
               if (
-                publicAddress === EXISTING_PUBLIC_ADDRESS &&
+                walletAddress === EXISTING_WALLET_ADDRESS &&
                 signature === EXISTING_NONCE &&
                 signedMessage == EXISTING_SIGNED_MESSAGE
               ) {
@@ -124,53 +125,53 @@ describe(AuthService.name, () => {
 
   it('should get existing web3 login info', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
 
     // act
-    const loginInfo = await service.getWeb3LoginInfo(publicAddress);
+    const loginInfo = await service.getWeb3LoginInfo(walletAddress);
 
     // assert
-    expect(loginInfo.publicAddress).toBe(publicAddress);
+    expect(loginInfo.walletAddress).toBe(walletAddress);
     expect(loginInfo.signature).toBe(EXISTING_NONCE);
   });
 
   it('should get create new wallet login and get web3 login info', async () => {
     // arrange
-    const publicAddress = newWallet.address;
+    const walletAddress = newWallet.address;
 
     // act
-    const loginInfo = await service.getWeb3LoginInfo(publicAddress);
+    const loginInfo = await service.getWeb3LoginInfo(walletAddress);
 
     // assert
-    expect(loginInfo.publicAddress).toBe(publicAddress);
+    expect(loginInfo.walletAddress).toBe(walletAddress);
     expect(loginInfo.signature).toBe(NEW_NONCE);
   });
 
   it('should failed to get web3 login info - account is locked', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const wallet: UserWalletLoginDto = {
-      userId: EXISTING_USER_ID,
-      publicAddress: EXISTING_PUBLIC_ADDRESS,
-      nonce: EXISTING_NONCE,
+      id: EXISTING_USER_ID,
+      walletAddress: EXISTING_WALLET_ADDRESS,
+      walletSigningNonce: EXISTING_NONCE,
       username: EXISTING_USER_NAME,
       lockoutExpiryAt: timeService.getUtcNow().add(1, 'second').toDate(),
       loginAttempts: 3,
     };
 
-    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
+    jest.spyOn(userService, 'getUserByWalletAddress').mockImplementation(async () => wallet);
 
     // actsert
-    await expect(service.getWeb3LoginInfo(publicAddress)).rejects.toThrowError(UnauthorizedException);
+    await expect(service.getWeb3LoginInfo(walletAddress)).rejects.toThrowError(UnauthorizedException);
   });
 
   it('should validate web3 signature', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = EXISTING_SIGNED_MESSAGE;
 
     // act
-    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+    const user = await service.validateWeb3Signature(walletAddress, signedMessage);
 
     // assert
     expect(user).toBeDefined();
@@ -182,11 +183,11 @@ describe(AuthService.name, () => {
 
   it('should not validate web3 signature', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = 'invalid';
 
     // act
-    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+    const user = await service.validateWeb3Signature(walletAddress, signedMessage);
 
     // assert
     expect(user).toBeNull();
@@ -195,12 +196,12 @@ describe(AuthService.name, () => {
 
   it('should not validate web3 signature and lock account', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = 'invalid';
     const wallet: UserWalletLoginDto = {
-      userId: EXISTING_USER_ID,
-      publicAddress: EXISTING_PUBLIC_ADDRESS,
-      nonce: EXISTING_NONCE,
+      id: EXISTING_USER_ID,
+      walletAddress: EXISTING_WALLET_ADDRESS,
+      walletSigningNonce: EXISTING_NONCE,
       username: EXISTING_USER_NAME,
       lockoutExpiryAt: null,
       loginAttempts: config.maxLoginAttempts - 1, // set current login attempts 1 less than max
@@ -208,15 +209,17 @@ describe(AuthService.name, () => {
 
     let actualLockoutExpiryAt: Date | null = null;
     let actualLoginAttempts: number | null = null;
-    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
-    userService.updateLoginFailed = jest.fn(async (userId, loginAttempts, lockoutExpiryAt: Date | null) => {
+    jest.spyOn(userService, 'getUserByWalletAddress').mockImplementation(async () => wallet);
+    userService.updateLoginFailed = jest.fn(async (id, loginAttempts, lockoutExpiryAt: Date | null) => {
       actualLockoutExpiryAt = lockoutExpiryAt;
       actualLoginAttempts = loginAttempts;
       return {
-        userId,
-        publicAddress: EXISTING_PUBLIC_ADDRESS,
-        nonce: EXISTING_NONCE,
+        id,
+        walletAddress: EXISTING_WALLET_ADDRESS,
+        walletSigningNonce: EXISTING_NONCE,
         username: EXISTING_USER_NAME,
+        email: EXISTING_USER_EMAIL,
+        emailVerified: false,
         lockoutExpiryAt,
         loginAttempts,
         lastLoggedInAt: null,
@@ -226,7 +229,7 @@ describe(AuthService.name, () => {
     });
 
     // act
-    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+    const user = await service.validateWeb3Signature(walletAddress, signedMessage);
 
     // assert
     expect(user).toBeNull();
@@ -240,12 +243,12 @@ describe(AuthService.name, () => {
 
   it('should not validate web3 signature and increase login attempt', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = 'invalid';
     const wallet: UserWalletLoginDto = {
-      userId: EXISTING_USER_ID,
-      publicAddress: EXISTING_PUBLIC_ADDRESS,
-      nonce: EXISTING_NONCE,
+      id: EXISTING_USER_ID,
+      walletAddress: EXISTING_WALLET_ADDRESS,
+      walletSigningNonce: EXISTING_NONCE,
       username: EXISTING_USER_NAME,
       lockoutExpiryAt: timeService.getUtcNow().add(-1, 'second').toDate(),
       loginAttempts: config.maxLoginAttempts, // set current login attempts 1 less than max
@@ -253,15 +256,17 @@ describe(AuthService.name, () => {
 
     let actualLockoutExpiryAt: Date | null = null;
     let actualLoginAttempts: number | null = null;
-    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
-    userService.updateLoginFailed = jest.fn(async (userId, loginAttempts, lockoutExpiryAt: Date | null) => {
+    jest.spyOn(userService, 'getUserByWalletAddress').mockImplementation(async () => wallet);
+    userService.updateLoginFailed = jest.fn(async (id, loginAttempts, lockoutExpiryAt: Date | null) => {
       actualLockoutExpiryAt = lockoutExpiryAt;
       actualLoginAttempts = loginAttempts;
       return {
-        userId,
-        publicAddress: EXISTING_PUBLIC_ADDRESS,
-        nonce: EXISTING_NONCE,
+        id,
+        walletAddress: EXISTING_WALLET_ADDRESS,
+        walletSigningNonce: EXISTING_NONCE,
         username: EXISTING_USER_NAME,
+        email: EXISTING_USER_EMAIL,
+        emailVerified: false,
         lockoutExpiryAt,
         loginAttempts,
         lastLoggedInAt: null,
@@ -271,7 +276,7 @@ describe(AuthService.name, () => {
     });
 
     // act
-    const user = await service.validateWeb3Signature(publicAddress, signedMessage);
+    const user = await service.validateWeb3Signature(walletAddress, signedMessage);
 
     // assert
     expect(user).toBeNull();
@@ -283,30 +288,30 @@ describe(AuthService.name, () => {
 
   it('should not validate web3 signature - invalid wallet address', async () => {
     // arrange
-    const publicAddress = 'invalid';
+    const walletAddress = 'invalid';
     const signedMessage = EXISTING_SIGNED_MESSAGE;
 
     // actsert
-    await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(NotFoundException);
+    await expect(service.validateWeb3Signature(walletAddress, signedMessage)).rejects.toThrowError(NotFoundException);
   });
 
   it('should not validate web3 signature - account is locked', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = EXISTING_SIGNED_MESSAGE;
     const wallet: UserWalletLoginDto = {
-      userId: EXISTING_USER_ID,
-      publicAddress: EXISTING_PUBLIC_ADDRESS,
-      nonce: EXISTING_NONCE,
+      id: EXISTING_USER_ID,
+      walletAddress: EXISTING_WALLET_ADDRESS,
+      walletSigningNonce: EXISTING_NONCE,
       username: EXISTING_USER_NAME,
       lockoutExpiryAt: timeService.getUtcNow().add(1, 'second').toDate(),
       loginAttempts: 3,
     };
 
-    jest.spyOn(userService, 'getWalletLoginByPublicAddress').mockImplementation(async () => wallet);
+    jest.spyOn(userService, 'getUserByWalletAddress').mockImplementation(async () => wallet);
 
     // actsert
-    await expect(service.validateWeb3Signature(publicAddress, signedMessage)).rejects.toThrowError(
+    await expect(service.validateWeb3Signature(walletAddress, signedMessage)).rejects.toThrowError(
       UnauthorizedException
     );
   });
@@ -332,7 +337,7 @@ describe(AuthService.name, () => {
 
   it('should generate web3 access token', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = EXISTING_SIGNED_MESSAGE;
     const user: UserIdUsernameDto = {
       id: EXISTING_USER_ID,
@@ -343,7 +348,7 @@ describe(AuthService.name, () => {
     tokenService.upsertUserRefreshToken = jest.fn();
 
     // act
-    const res = await service.generateWeb3AccessToken(publicAddress, signedMessage);
+    const res = await service.generateWeb3AccessToken(walletAddress, signedMessage);
 
     // assert
     const payload = await verifyAccessTokenResponse(res);
@@ -354,11 +359,11 @@ describe(AuthService.name, () => {
 
   it('should not generate web3 access token - user not verified', async () => {
     // arrange
-    const publicAddress = EXISTING_PUBLIC_ADDRESS;
+    const walletAddress = EXISTING_WALLET_ADDRESS;
     const signedMessage = 'invalid';
 
     // actsert
-    await expect(service.generateWeb3AccessToken(publicAddress, signedMessage)).rejects.toThrowError(
+    await expect(service.generateWeb3AccessToken(walletAddress, signedMessage)).rejects.toThrowError(
       UnauthorizedException
     );
   });

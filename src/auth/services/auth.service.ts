@@ -22,21 +22,21 @@ export class AuthService {
     this.jwtService;
   }
 
-  async getWeb3LoginInfo(publicAddress: string): Promise<Web3LoginInfoResponse> {
-    let walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
+  async getWeb3LoginInfo(walletAddress: string): Promise<Web3LoginInfoResponse> {
+    let user = await this.usersService.getUserByWalletAddress(walletAddress);
 
-    if (!walletLogin) {
-      walletLogin = await this.usersService.createWeb3Login(publicAddress);
+    if (!user) {
+      user = await this.usersService.createWeb3Login(walletAddress);
     }
 
-    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > this.timeService.getUtcNow().toDate()) {
+    if (user.lockoutExpiryAt && user.lockoutExpiryAt > this.timeService.getUtcNow().toDate()) {
       throw new UnauthorizedException('Account is locked');
     }
 
     // TODO - add friendly message to nonce
-    const signature = walletLogin.nonce;
+    const signature = user.walletSigningNonce;
 
-    return { publicAddress: walletLogin.publicAddress, signature };
+    return { walletAddress: user.walletAddress, signature };
   }
 
   async generateAccessToken(user: UserIdUsernameDto): Promise<AccessTokenResponse> {
@@ -53,8 +53,8 @@ export class AuthService {
     };
   }
 
-  async generateWeb3AccessToken(publicAddress: string, signedMessage: string): Promise<AccessTokenResponse> {
-    const user = await this.validateWeb3Signature(publicAddress, signedMessage);
+  async generateWeb3AccessToken(walletAddress: string, signedMessage: string): Promise<AccessTokenResponse> {
+    const user = await this.validateWeb3Signature(walletAddress, signedMessage);
 
     if (!user) {
       throw new UnauthorizedException();
@@ -88,43 +88,43 @@ export class AuthService {
     return this.generateAccessToken(user);
   }
 
-  async validateWeb3Signature(publicAddress: string, signedMessage: string): Promise<UserIdUsernameDto | null> {
-    const walletLogin = await this.usersService.getWalletLoginByPublicAddress(publicAddress);
+  async validateWeb3Signature(walletAddress: string, signedMessage: string): Promise<UserIdUsernameDto | null> {
+    const user = await this.usersService.getUserByWalletAddress(walletAddress);
 
-    if (!walletLogin) {
+    if (!user) {
       throw new NotFoundException('Invalid public address');
     }
 
-    if (walletLogin.lockoutExpiryAt && walletLogin.lockoutExpiryAt > this.timeService.getUtcNow().toDate()) {
+    if (user.lockoutExpiryAt && user.lockoutExpiryAt > this.timeService.getUtcNow().toDate()) {
       throw new UnauthorizedException('Account is locked');
     }
 
     // TODO - add friendly message to nonce
-    const signature = walletLogin.nonce;
-    const isValid = this.web3Service.validateSignature(walletLogin.publicAddress, signature, signedMessage);
+    const signature = user.walletSigningNonce;
+    const isValid = this.web3Service.validateSignature(user.walletAddress, signature, signedMessage);
     if (!isValid) {
       let loginAttempts = 0;
       let lockoutExpiryAt: Date | null = null;
 
       // if lockout expiry has a value, it means that the user was previously locked out
       // in which case we want to reset their login attempts.
-      if (walletLogin.lockoutExpiryAt) {
+      if (user.lockoutExpiryAt) {
         loginAttempts = 1;
       } else {
-        loginAttempts = walletLogin.loginAttempts + 1;
+        loginAttempts = user.loginAttempts + 1;
       }
 
       if (loginAttempts >= this.config.maxLoginAttempts) {
         lockoutExpiryAt = this.timeService.getUtcNow().add(this.config.lockoutDurationSecs, 'seconds').toDate();
       }
 
-      await this.usersService.updateLoginFailed(walletLogin.userId, loginAttempts, lockoutExpiryAt);
+      await this.usersService.updateLoginFailed(user.id, loginAttempts, lockoutExpiryAt);
 
       return null;
     } else {
-      await this.usersService.updateLoginSuccess(walletLogin.userId);
+      await this.usersService.updateLoginSuccess(user.id);
 
-      return { id: walletLogin.userId, username: walletLogin.username };
+      return { id: user.id, username: user.username };
     }
   }
 

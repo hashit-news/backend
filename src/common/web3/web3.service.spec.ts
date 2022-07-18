@@ -91,10 +91,10 @@ describe(Web3Service.name, () => {
     const wallet = ethers.Wallet.createRandom();
     const signature = 'I like turtles.';
     const signedMessage = await wallet.signMessage(signature);
-    const publicAddress = wallet.address;
+    const walletAddress = wallet.address;
 
     // act
-    const isValid = service.validateSignature(publicAddress, signature, signedMessage);
+    const isValid = service.validateSignature(walletAddress, signature, signedMessage);
 
     // assert
     expect(isValid).toBeTruthy();
@@ -105,10 +105,10 @@ describe(Web3Service.name, () => {
     const wallet = ethers.Wallet.createRandom();
     const signature = 'I like turtles.';
     const signedMessage = 'mumbo_jumble';
-    const publicAddress = wallet.address;
+    const walletAddress = wallet.address;
 
     // act
-    const isValid = service.validateSignature(publicAddress, signature, signedMessage);
+    const isValid = service.validateSignature(walletAddress, signature, signedMessage);
 
     // assert
     expect(isValid).toBeFalsy();
@@ -118,9 +118,9 @@ describe(Web3Service.name, () => {
     // arrange
     const signature = 'I like turtles.';
     const signedMessage = 'mumbo_jumble';
-    const publicAddress = 'INVALID_ADDRESS';
+    const walletAddress = 'INVALID_ADDRESS';
 
     // actsert
-    expect(() => service.validateSignature(publicAddress, signature, signedMessage)).toThrowError(BadRequestException);
+    expect(() => service.validateSignature(walletAddress, signature, signedMessage)).toThrowError(BadRequestException);
   });
 });

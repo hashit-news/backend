@@ -12,8 +12,8 @@ export class Web3Service {
     }
   }
 
-  validateSignature(publicAddress: string, signature: string, signedMessage: string) {
-    const { isValid, address } = this.getAddress(publicAddress);
+  validateSignature(walletAddress: string, signature: string, signedMessage: string) {
+    const { isValid, address } = this.getAddress(walletAddress);
 
     if (!isValid) {
       throw new BadRequestException('Invalid public address');

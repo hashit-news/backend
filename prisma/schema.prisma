@@ -11,31 +11,21 @@ datasource db {
 }
 
 model User {
-  id              String           @id @default(cuid()) @db.VarChar(32)
-  username        String?          @unique @db.VarChar(100)
-  email           String?          @unique @db.VarChar(100)
-  emailVerified   Boolean          @default(false)
-  roles           UserRole[]
-  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamp
-  updatedAt       DateTime         @default(now()) @map("updated_at") @db.Timestamp
-  userWalletLogin UserWalletLogin?
-  userTokens      UserToken[]
+  id                 String      @id @default(cuid()) @db.VarChar(32)
+  username           String?     @unique @db.VarChar(100)
+  email              String?     @unique @db.VarChar(100)
+  emailVerified      Boolean     @default(false)
+  walletAddress      String      @unique @map("wallet_address") @db.VarChar(255)
+  walletSigningNonce String      @map("wallet_signing_nonce") @db.VarChar(255)
+  lastLoggedInAt     DateTime?   @map("last_logged_in_at") @db.Timestamp
+  loginAttempts      Int         @map("log_in_attempts") @db.Integer
+  lockoutExpiryAt    DateTime?   @map("lockout_expiry_at") @db.Timestamp
+  roles              UserRole[]
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamp
+  updatedAt          DateTime    @default(now()) @map("updated_at") @db.Timestamp
+  userTokens         UserToken[]
 
   @@map("users")
-}
-
-model UserWalletLogin {
-  publicAddress   String    @id @map("public_address") @db.VarChar(255)
-  user            User      @relation(fields: [userId], references: [id])
-  userId          String    @unique @map("user_id") @db.VarChar(32)
-  nonce           String    @map("nonce") @db.VarChar(255)
-  lastLoggedInAt  DateTime? @map("last_logged_in_at") @db.Timestamp
-  loginAttempts   Int       @map("log_in_attempts") @db.Integer
-  lockoutExpiryAt DateTime? @map("lockout_expiry_at") @db.Timestamp
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamp
-  updatedAt       DateTime  @default(now()) @map("updated_at") @db.Timestamp
-
-  @@map("user_wallet_logins")
 }
 
 enum RoleType {
