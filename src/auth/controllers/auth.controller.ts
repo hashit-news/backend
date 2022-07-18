@@ -15,9 +15,9 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Get('web3')
-  async getLoginInfo(@Query('publicAddress') publicAddress: string) {
+  async getLoginInfo(@Query('walletAddress') walletAddress: string) {
     try {
-      return await this.authService.getWeb3LoginInfo(publicAddress);
+      return await this.authService.getWeb3LoginInfo(walletAddress);
     } catch (err) {
       if (err instanceof UnauthorizedException) {
         throw err;
@@ -33,15 +33,15 @@ export class AuthController {
     const loginInfo = await this.authService.getWeb3LoginInfo(wallet.address);
     const signedMessage = await wallet.signMessage(loginInfo.signature);
 
-    return { publicAddress: wallet.address, signedMessage };
+    return { walletAddress: wallet.address, signedMessage };
   }
 
   @Post('token')
   @HttpCode(HttpStatus.OK)
   async getToken(@Body() body: Web3LoginRequest) {
-    const { publicAddress, signedMessage } = body;
+    const { walletAddress, signedMessage } = body;
 
-    return await this.authService.generateWeb3AccessToken(publicAddress, signedMessage);
+    return await this.authService.generateWeb3AccessToken(walletAddress, signedMessage);
   }
 
   @Post('token/refresh')

@@ -2,14 +2,14 @@ import { IsEthereumAddress, IsNotEmpty } from 'class-validator';
 import { UserDto } from '../../users/user.models';
 
 export class Web3LoginInfoResponse {
-  publicAddress: string;
+  walletAddress: string;
   signature: string;
 }
 
 export class Web3LoginRequest {
   @IsEthereumAddress()
   @IsNotEmpty()
-  publicAddress: string;
+  walletAddress: string;
 
   @IsNotEmpty()
   signedMessage: string;

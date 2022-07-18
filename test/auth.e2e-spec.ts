@@ -23,12 +23,12 @@ describe('AppController (e2e)', () => {
   it('should login with new account', async () => {
     const wallet = ethers.Wallet.createRandom();
     const getLoginResponse = await request(app.getHttpServer())
-      .get(`/auth/web3?publicAddress=${wallet.address}`)
+      .get(`/auth/web3?walletAddress=${wallet.address}`)
       .expect(200);
 
     expect(getLoginResponse.body).toBeDefined();
     expect(getLoginResponse.body).not.toBeNull();
-    expect(getLoginResponse.body?.publicAddress).toEqual(wallet.address);
+    expect(getLoginResponse.body?.walletAddress).toEqual(wallet.address);
     expect(getLoginResponse.body?.signature).toBeDefined();
     expect(getLoginResponse.body?.signature).not.toBeNull();
 
@@ -38,7 +38,7 @@ describe('AppController (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/auth/token')
       .send({
-        publicAddress: wallet.address,
+        walletAddress: wallet.address,
         signedMessage: signedMessage,
       })
       .expect(200);

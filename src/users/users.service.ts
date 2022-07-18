@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/database/prisma.service';
 import { CryptoService } from '../common/security/crypto.service';
 import { TimeService } from '../common/time/time.service';
@@ -14,27 +14,26 @@ export class UsersService {
     private readonly timeService: TimeService
   ) {}
 
-  async getWalletLoginByPublicAddress(publicAddress: string): Promise<UserWalletLoginDto | null> {
-    const { isValid, address } = this.web3Service.getAddress(publicAddress);
+  async getUserByWalletAddress(walletAddress: string): Promise<UserWalletLoginDto | null> {
+    const { isValid, address } = this.web3Service.getAddress(walletAddress);
 
     if (!isValid) {
       throw new BadRequestException('Invalid public address');
     }
 
-    const userWalletLogin = await this.prisma.userWalletLogin.findUnique({
-      where: { publicAddress: address },
-      include: { user: true },
+    const user = await this.prisma.user.findUnique({
+      where: { walletAddress: address },
     });
 
-    if (!userWalletLogin) {
+    if (!user) {
       return null;
     }
 
-    return { ...userWalletLogin, username: userWalletLogin.user.username };
+    return user;
   }
 
-  async createWeb3Login(publicAddress: string): Promise<UserWalletLoginDto> {
-    const { isValid, address } = this.web3Service.getAddress(publicAddress);
+  async createWeb3Login(walletAddress: string): Promise<UserWalletLoginDto> {
+    const { isValid, address } = this.web3Service.getAddress(walletAddress);
 
     if (!isValid || !address) {
       throw new BadRequestException('Invalid public address');
@@ -42,25 +41,16 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
+        walletAddress: address,
+        walletSigningNonce: this.cryptoService.generate256BitSecret(),
+        loginAttempts: 0,
         roles: {
           create: [{ roleId: 2 }],
         },
-        userWalletLogin: {
-          create: {
-            publicAddress: address,
-            nonce: this.cryptoService.generate256BitSecret(),
-            loginAttempts: 0,
-          },
-        },
       },
-      include: { userWalletLogin: true },
     });
 
-    if (!user.userWalletLogin) {
-      throw new InternalServerErrorException('Unable to create wallet login');
-    }
-
-    return { ...user.userWalletLogin, username: user.username };
+    return user;
   }
 
   /**
@@ -86,44 +76,40 @@ export class UsersService {
   async getUserRequestDataById(userId: string): Promise<UserDto | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { roles: { include: { role: true } }, userWalletLogin: true },
+      include: { roles: { include: { role: true } } },
     });
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (!user.userWalletLogin) {
-      throw new NotFoundException('User wallet login not found');
-    }
-
     return {
       id: user.id,
       username: user.username,
-      publicAddress: user.userWalletLogin.publicAddress,
+      walletAddress: user.walletAddress,
       roles: user.roles.map(role => role.role.role),
     };
   }
 
   async updateLoginSuccess(userId: string) {
-    return await this.prisma.userWalletLogin.update({
-      where: { userId: userId },
+    return await this.prisma.user.update({
+      where: { id: userId },
       data: {
         lastLoggedInAt: this.timeService.getUtcNow().toDate(),
         loginAttempts: 0,
         lockoutExpiryAt: null,
-        nonce: this.cryptoService.generate256BitSecret(),
+        walletSigningNonce: this.cryptoService.generate256BitSecret(),
       },
     });
   }
 
   async updateLoginFailed(userId: string, loginAttempts: number, lockoutExpiryAt?: Date | null) {
-    return await this.prisma.userWalletLogin.update({
-      where: { userId: userId },
+    return await this.prisma.user.update({
+      where: { id: userId },
       data: {
         loginAttempts,
         lockoutExpiryAt,
-        nonce: this.cryptoService.generate256BitSecret(),
+        walletSigningNonce: this.cryptoService.generate256BitSecret(),
       },
     });
   }

@@ -4,14 +4,14 @@ import { UsersService } from './users.service';
 import { getLoggerToken } from 'nestjs-pino';
 import { CryptoService } from '../common/security/crypto.service';
 import { Web3Service } from '../common/web3/web3.service';
-import { BadRequestException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { RoleType } from '@prisma/client';
 import { TimeService } from '../common/time/time.service';
 import * as moment from 'moment';
 
 const USER_REQUEST_DATA_USER_ID = '456';
 const USER_REQUEST_DATA_USERNAME = 'boop';
-const USER_REQUEST_DATA_PUBLIC_ADDRESS = '0x123';
+const USER_REQUEST_DATA_WALLET_ADDRESS = '0x123';
 const USER_REQUEST_DATA_USER_ID_MISSING_WALLET = 'bro';
 const CRYPTO_256_BIT_SECRET = '0x123456789012345678901234567890123456789012345678901234567890123';
 const MOMENT_UTC_NOW = moment('2020-01-01T00:00:00.000Z');
@@ -26,48 +26,14 @@ describe(UsersService.name, () => {
         {
           provide: PrismaService,
           useValue: {
-            userWalletLogin: {
-              findUnique: jest.fn(val => {
-                if (
-                  val &&
-                  val.where &&
-                  val.where.publicAddress &&
-                  val.where.publicAddress === '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-                ) {
-                  return {
-                    publicAddress: val.where.publicAddress,
-                    nonce: 'nonce',
-                    user: {},
-                  };
-                }
-
-                return null;
-              }),
-              update: jest.fn(val => {
-                if (val && val.data) {
-                  return val.data;
-                }
-              }),
-            },
             user: {
               create: jest.fn(val => {
-                if (
-                  val &&
-                  val.data &&
-                  val.data.userWalletLogin.create.publicAddress === '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
-                ) {
+                if (val && val.data && val.data.walletAddress === '0x8ba1f109551bD432803012645Ac136ddd64DBA72') {
                   return {
                     ...val.data,
-                    userWalletLogin: {
-                      ...val.data.userWalletLogin.create,
-                    },
                   };
-                } else if (
-                  val &&
-                  val.data &&
-                  val.data.userWalletLogin.create.publicAddress == '0x0Ac1dF02185025F65202660F8167210A80dD5086'
-                ) {
-                  return {};
+                } else if (val && val.data && val.data.walletAddress === '0x0Ac1dF02185025F65202660F8167210A80dD5086') {
+                  return null;
                 }
 
                 return null;
@@ -89,9 +55,7 @@ describe(UsersService.name, () => {
                           },
                         },
                       ],
-                      userWalletLogin: {
-                        publicAddress: USER_REQUEST_DATA_PUBLIC_ADDRESS,
-                      },
+                      walletAddress: USER_REQUEST_DATA_WALLET_ADDRESS,
                     };
                   } else if (val.where.id === USER_REQUEST_DATA_USER_ID_MISSING_WALLET) {
                     return {
@@ -105,10 +69,25 @@ describe(UsersService.name, () => {
                         },
                       ],
                     };
+                  } else if (
+                    val &&
+                    val.where &&
+                    val.where.walletAddress &&
+                    val.where.walletAddress === '0x8ba1f109551bD432803012645Ac136ddd64DBA72'
+                  ) {
+                    return {
+                      walletAddress: val.where.walletAddress,
+                      walletSigningNonce: 'nonce',
+                    };
                   }
                 }
 
                 return null;
+              }),
+              update: jest.fn(val => {
+                if (val && val.data) {
+                  return val.data;
+                }
               }),
             },
           },
@@ -189,13 +168,13 @@ describe(UsersService.name, () => {
     const address = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 
     // act
-    const userWalletLogin = await service.createWeb3Login(address);
+    const user = await service.createWeb3Login(address);
 
     // assert
-    expect(userWalletLogin).toBeDefined();
-    expect(userWalletLogin).not.toBeNull();
-    expect(userWalletLogin.publicAddress).toBe(address);
-    expect(userWalletLogin.nonce).toBe(CRYPTO_256_BIT_SECRET);
+    expect(user).toBeDefined();
+    expect(user).not.toBeNull();
+    expect(user.walletAddress).toBe(address);
+    expect(user.walletSigningNonce).toBe(CRYPTO_256_BIT_SECRET);
   });
 
   it('should throw invalid public adress on creating web3 login', async () => {
@@ -211,13 +190,13 @@ describe(UsersService.name, () => {
     const address = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 
     // act
-    const userWalletLogin = await service.getWalletLoginByPublicAddress(address);
+    const user = await service.getUserByWalletAddress(address);
 
     // assert
-    expect(userWalletLogin).toBeDefined();
-    expect(userWalletLogin).not.toBeNull();
-    expect(userWalletLogin?.publicAddress).toBe(address);
-    expect(userWalletLogin?.nonce).toBe('nonce');
+    expect(user).toBeDefined();
+    expect(user).not.toBeNull();
+    expect(user?.walletAddress).toBe(address);
+    expect(user?.walletSigningNonce).toBe('nonce');
   });
 
   it('should fail to find wallet login', async () => {
@@ -225,7 +204,7 @@ describe(UsersService.name, () => {
     const address = '0x0Ac1dF02185025F65202660F8167210A80dD5086';
 
     // act
-    const userWalletLogin = await service.getWalletLoginByPublicAddress(address);
+    const userWalletLogin = await service.getUserByWalletAddress(address);
 
     // assert
     expect(userWalletLogin).toBeNull();
@@ -236,15 +215,7 @@ describe(UsersService.name, () => {
     const address = 'I like turtles!';
 
     // act
-    await expect(service.getWalletLoginByPublicAddress(address)).rejects.toThrow(BadRequestException);
-  });
-
-  it('should fail to create web3login - wallet login not created', async () => {
-    // arrange
-    const address = '0x0Ac1dF02185025F65202660F8167210A80dD5086';
-
-    // actsert
-    await expect(service.createWeb3Login(address)).rejects.toThrow(InternalServerErrorException);
+    await expect(service.getUserByWalletAddress(address)).rejects.toThrow(BadRequestException);
   });
 
   it('should get user request data', async () => {
@@ -262,20 +233,12 @@ describe(UsersService.name, () => {
     expect(user?.roles).toBeDefined();
     expect(user?.roles).not.toBeNull();
     expect(user?.roles).toContain(RoleType.User);
-    expect(user?.publicAddress).toBe(USER_REQUEST_DATA_PUBLIC_ADDRESS);
+    expect(user?.walletAddress).toBe(USER_REQUEST_DATA_WALLET_ADDRESS);
   });
 
   it('should not get user request data - user not found', async () => {
     // arrange
     const userId = 'bruh';
-
-    // actsert
-    await expect(service.getUserRequestDataById(userId)).rejects.toThrowError(NotFoundException);
-  });
-
-  it('should not get user request data - user wallet not found', async () => {
-    // arrange
-    const userId = USER_REQUEST_DATA_USER_ID_MISSING_WALLET;
 
     // actsert
     await expect(service.getUserRequestDataById(userId)).rejects.toThrowError(NotFoundException);
@@ -294,7 +257,7 @@ describe(UsersService.name, () => {
     expect(walletLogin.lastLoggedInAt).toEqual(MOMENT_UTC_NOW.toDate());
     expect(walletLogin.loginAttempts).toBe(0);
     expect(walletLogin.lockoutExpiryAt).toBeNull();
-    expect(walletLogin.nonce).toBe(CRYPTO_256_BIT_SECRET);
+    expect(walletLogin.walletSigningNonce).toBe(CRYPTO_256_BIT_SECRET);
   });
 
   it('should update on failed login', async () => {
@@ -311,6 +274,6 @@ describe(UsersService.name, () => {
     expect(walletLogin).not.toBeNull();
     expect(walletLogin.loginAttempts).toBe(loginAttempts);
     expect(walletLogin.lockoutExpiryAt).toBe(lockoutExpiryAt);
-    expect(walletLogin.nonce).toBe(CRYPTO_256_BIT_SECRET);
+    expect(walletLogin.walletSigningNonce).toBe(CRYPTO_256_BIT_SECRET);
   });
 });

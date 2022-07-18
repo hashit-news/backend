@@ -23,50 +23,50 @@ describe(AuthController.name, () => {
 
   it('should get web3 login info', async () => {
     // arrange
-    const publicAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
+    const walletAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
     const signature = 'secret';
     authService.getWeb3LoginInfo = jest.fn(async () => {
       return {
-        publicAddress,
+        walletAddress,
         signature,
       };
     });
 
     // act
-    const result = await controller.getLoginInfo(publicAddress);
+    const result = await controller.getLoginInfo(walletAddress);
 
     // assert
     expect(result).toBeDefined();
     expect(result).not.toBeNull();
-    expect(result.publicAddress).toBe(publicAddress);
+    expect(result.walletAddress).toBe(walletAddress);
     expect(result.signature).toBe(signature);
   });
 
   it('should fail to get web3 login and re-throw unauthorized exception', async () => {
     // arrange
-    const publicAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
+    const walletAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
     authService.getWeb3LoginInfo = jest.fn(async () => {
       throw new UnauthorizedException();
     });
 
     // actsert
-    await expect(controller.getLoginInfo(publicAddress)).rejects.toThrowError(UnauthorizedException);
+    await expect(controller.getLoginInfo(walletAddress)).rejects.toThrowError(UnauthorizedException);
   });
 
   it('should fail to get web3 login and throw any exception as unauthorized exception', async () => {
     // arrange
-    const publicAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
+    const walletAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
     authService.getWeb3LoginInfo = jest.fn(async () => {
       throw new Error();
     });
 
     // actsert
-    await expect(controller.getLoginInfo(publicAddress)).rejects.toThrowError(UnauthorizedException);
+    await expect(controller.getLoginInfo(walletAddress)).rejects.toThrowError(UnauthorizedException);
   });
 
   it('should get access token', async () => {
     // arrange
-    const publicAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
+    const walletAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
     const signedMessage = 'secret';
     const accessToken = 'accessToken';
     const refreshToken = 'refreshToken';
@@ -82,7 +82,7 @@ describe(AuthController.name, () => {
     });
 
     // act
-    const result = await controller.getToken({ publicAddress, signedMessage });
+    const result = await controller.getToken({ walletAddress: walletAddress, signedMessage });
 
     // assert
     expect(result).toBeDefined();

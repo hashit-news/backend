@@ -21,5 +21,6 @@ describe(CryptoService.name, () => {
     expect(result).toBeDefined();
     expect(result).not.toBeNull();
     expect(result.length).toBe(32);
+    console.log(result);
   });
 });

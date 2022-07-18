@@ -3,14 +3,14 @@ import { RoleType } from '@prisma/client';
 export interface UserDto {
   id: string;
   username?: string | null;
-  publicAddress?: string;
+  walletAddress?: string;
   roles: RoleType[];
 }
 
 export interface UserWalletLoginDto {
-  userId: string;
-  publicAddress: string;
-  nonce: string;
+  id: string;
+  walletAddress: string;
+  walletSigningNonce: string;
   username?: string | null;
   loginAttempts: number;
   lockoutExpiryAt?: Date | null;
