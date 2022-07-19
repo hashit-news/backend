@@ -12,3 +12,7 @@ export default registerAs(
     port: parseInt(process.env.APP_PORT || '8080', 10) || 8080,
   })
 );
+
+export const isProduction = () => {
+  return process.env.NODE_ENV === 'production';
+};

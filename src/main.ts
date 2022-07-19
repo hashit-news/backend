@@ -2,15 +2,19 @@ import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerDocumentOptions, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { ExpressConfig } from './common/config/express.config';
 import { PrismaService } from './common/database/prisma.service';
 import { ProblemDetailFilter } from './common/filters/problem-detail/problem-detail.filter';
+import { withContext, withRequestId } from './common/middlewares/request-context/request-context.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.use(withContext, withRequestId);
   app.enableCors();
+  app.use(helmet.hidePoweredBy());
   app.useGlobalFilters(new ProblemDetailFilter());
   app.useGlobalPipes(
     new ValidationPipe({
