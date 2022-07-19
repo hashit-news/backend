@@ -16,7 +16,6 @@ describe(CuidService.name, () => {
     expect(cuid).toBeDefined();
     expect(cuid).not.toBeNull();
     expect(service.isCuid(cuid)).toBeTruthy();
-    console.log(cuid);
   });
 
   it('should generate a slug', () => {
@@ -28,7 +27,6 @@ describe(CuidService.name, () => {
     expect(slug).toBeDefined();
     expect(slug).not.toBeNull();
     expect(service.isSlug(slug)).toBeTruthy();
-    console.log(slug);
   });
 
   it('should detect a cuid', () => {

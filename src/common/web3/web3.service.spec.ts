@@ -6,7 +6,7 @@ import { Web3Service } from './web3.service';
 describe(Web3Service.name, () => {
   let service: Web3Service;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [Web3Service],
     }).compile();
