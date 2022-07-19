@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import expressConfig from './common/config/express.config';
 import loggingConfig from './common/config/logging.config';
 import authConfig from './common/config/auth.config';
+import { CuidService } from './common/security/cuid.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import authConfig from './common/config/auth.config';
       load: [expressConfig, loggingConfig, authConfig],
     }),
     LoggerModule.forRootAsync({
-      inject: [ConfigService],
+      inject: [ConfigService, CuidService],
       useFactory: async (configService: ConfigService) => ({
         pinoHttp: {
           level: configService.get<string>('logging.defaultLevel', 'debug'),

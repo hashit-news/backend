@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import { ErrorDetail } from './problem-detail.models';
 import * as _ from 'underscore';
 import { PROBLEM_CONTENT_TYPE, PROBLEM_TYPE_BASE_URL } from './constants';
+import { isProduction } from '../../config/express.config';
 
 interface ExceptionResponse {
   error?: string | ErrorDetail;
@@ -23,7 +24,7 @@ export class ProblemDetailFilter implements ExceptionFilter {
 
     let title = exception.message;
     const type = `${PROBLEM_TYPE_BASE_URL}/${status}`;
-    const detail = exception.stack;
+    const detail = isProduction() ? undefined : exception.stack;
     const instance = request.path;
     let objectExtras = {};
 
