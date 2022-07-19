@@ -9,6 +9,7 @@ import { TimeService } from '../../common/time/time.service';
 import * as fs from 'fs';
 import { TokenType } from '@prisma/client';
 import * as moment from 'moment';
+import { FileService } from '../../common/files/file.service';
 
 const EXISTING_USER_ID = '1';
 const EXISTING_REFRESH_TOKEN = 'existing-refresh-token';
@@ -22,6 +23,7 @@ describe(TokenService.name, () => {
       imports: [ConfigModule.forRoot({ load: [authConfig] })],
       providers: [
         TokenService,
+        FileService,
         JwtService,
         {
           provide: PrismaService,

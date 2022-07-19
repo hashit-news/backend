@@ -14,6 +14,7 @@ import { TimeService } from '../../common/time/time.service';
 import { UserWalletLoginDto } from '../../users/user.models';
 import * as moment from 'moment';
 import { AccessTokenResponse, UserIdUsernameDto } from '../dtos/auth.models';
+import { FileService } from '../../common/files/file.service';
 
 const EXISTING_WALLET_ADDRESS = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
 const EXISTING_SIGNED_MESSAGE = 'This is valid';
@@ -38,6 +39,7 @@ describe(AuthService.name, () => {
       imports: [ConfigModule.forRoot({ load: [authConfig] })],
       providers: [
         AuthService,
+        FileService,
         {
           provide: UsersService,
           useValue: {

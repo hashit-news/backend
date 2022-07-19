@@ -2,11 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService, JwtSignOptions, JwtVerifyOptions } from '@nestjs/jwt';
 import authConfig from '../../common/config/auth.config';
-import * as fs from 'fs';
 import { PrismaService } from '../../common/database/prisma.service';
 import { TokenType } from '@prisma/client';
 import { TimeService } from '../../common/time/time.service';
 import { JwtPayloadDto, UserIdUsernameDto } from '../dtos/auth.models';
+import { FileService } from '../../common/files/file.service';
 
 @Injectable()
 export class TokenService {
@@ -14,13 +14,14 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly timeService: TimeService,
     private readonly prisma: PrismaService,
+    private readonly fileService: FileService,
     @Inject(authConfig.KEY) private readonly config: ConfigType<typeof authConfig>
   ) {}
 
   async getJwtSignOptions(issuer: string, privateKeyFile: string, expiresIn?: number): Promise<JwtSignOptions> {
     const algorithm = 'RS256';
     const encoding = 'utf8';
-    const privateKey = await fs.promises.readFile(privateKeyFile, encoding);
+    const privateKey = await this.fileService.readFile(privateKeyFile, encoding);
 
     const options: JwtSignOptions = {
       issuer,
@@ -40,7 +41,7 @@ export class TokenService {
     const { issuer, publicKeyFile } = this.config;
     const algorithm = 'RS256';
     const encoding = 'utf8';
-    const publicKey = await fs.promises.readFile(publicKeyFile, encoding);
+    const publicKey = await this.fileService.readFile(publicKeyFile, encoding);
 
     return {
       issuer,
