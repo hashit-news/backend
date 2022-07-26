@@ -2,6 +2,7 @@ import { IsEthereumAddress, IsNotEmpty } from 'class-validator';
 import { UserDto } from '../../users/user.models';
 
 export class Web3LoginInfoResponse {
+  userId: string;
   walletAddress: string;
   signature: string;
 }

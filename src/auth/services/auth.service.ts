@@ -36,7 +36,11 @@ export class AuthService {
     // TODO - add friendly message to nonce
     const signature = user.walletSigningNonce;
 
-    return { walletAddress: user.walletAddress, signature };
+    return {
+      userId: user.id,
+      walletAddress: user.walletAddress,
+      signature,
+    };
   }
 
   async generateAccessToken(user: UserIdUsernameDto): Promise<AccessTokenResponse> {

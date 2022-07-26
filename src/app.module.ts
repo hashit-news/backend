@@ -10,6 +10,7 @@ import expressConfig from './common/config/express.config';
 import loggingConfig from './common/config/logging.config';
 import authConfig from './common/config/auth.config';
 import { CuidService } from './common/security/cuid.service';
+import { PostsModule } from './posts/posts.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { CuidService } from './common/security/cuid.service';
     CommonModule,
     AuthModule,
     UsersModule,
+    PostsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

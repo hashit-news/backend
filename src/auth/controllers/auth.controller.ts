@@ -33,7 +33,7 @@ export class AuthController {
     const loginInfo = await this.authService.getWeb3LoginInfo(wallet.address);
     const signedMessage = await wallet.signMessage(loginInfo.signature);
 
-    return { walletAddress: wallet.address, signedMessage };
+    return { userId: loginInfo.userId, walletAddress: wallet.address, signedMessage };
   }
 
   @Post('token')
