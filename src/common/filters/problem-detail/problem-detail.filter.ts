@@ -1,4 +1,4 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ErrorDetail } from './problem-detail.models';
 import * as _ from 'underscore';
@@ -13,18 +13,20 @@ interface ExceptionResponse {
   statusCode: number;
 }
 
-@Catch(HttpException)
+@Catch()
 export class ProblemDetailFilter implements ExceptionFilter {
-  catch(exception: HttpException, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
-    const status = exception.getStatus();
-    const errorResponse = exception.getResponse() as string | ExceptionResponse;
+    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    let title = exception.message;
+    const errorResponse =
+      exception instanceof HttpException ? (exception.getResponse() as string | ExceptionResponse) : 'Unknown error';
+
+    let title = exception instanceof Error ? exception.message : 'Unknown error';
     const type = `${PROBLEM_TYPE_BASE_URL}/${status}`;
-    const detail = isProduction() ? undefined : exception.stack;
+    const detail = isProduction() ? undefined : exception instanceof Error ? exception.stack : undefined;
     const instance = request.path;
     let objectExtras = {};
 

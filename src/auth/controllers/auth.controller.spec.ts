@@ -23,10 +23,12 @@ describe(AuthController.name, () => {
 
   it('should get web3 login info', async () => {
     // arrange
+    const userId = 'userId';
     const walletAddress = '0x8ba1f109551bD432803012645Ac136ddd64DBA72';
     const signature = 'secret';
     authService.getWeb3LoginInfo = jest.fn(async () => {
       return {
+        userId,
         walletAddress,
         signature,
       };
@@ -36,8 +38,10 @@ describe(AuthController.name, () => {
     const result = await controller.getLoginInfo(walletAddress);
 
     // assert
+
     expect(result).toBeDefined();
     expect(result).not.toBeNull();
+    expect(result.userId).toBe(userId);
     expect(result.walletAddress).toBe(walletAddress);
     expect(result.signature).toBe(signature);
   });
